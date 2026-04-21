@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.uv/
+*.egg-info/
+
+# Env
+.env
+.env.local
+
+# Data — large/generated; tracked artifacts explicitly whitelisted below
+data/raw/
+data/derived/
+data/artifacts/
+data/log/
+data/quarantine/
+!data/cache/responses.jsonl
+!data/cache/responses.manifest.sha256
+
+# Frontend
+demo/node_modules/
+demo/dist/
+demo/.vite/
