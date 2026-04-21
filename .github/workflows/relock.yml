@@ -1,0 +1,76 @@
+# Manually regenerate uv.lock and open a PR.
+#
+# Use when:
+#   - A pinned *range* needs to move (e.g. pydantic 2→3, anthropic 0.x→1.x),
+#     which Dependabot won't do for you — Dependabot lifts versions *inside*
+#     the declared range, it does not rewrite the range.
+#   - You want a fresh solve after editing pyproject.toml dependencies by hand.
+#
+# Why a workflow, not `scripts/relock.py`:
+#   - Reviewers reproducing the project never need to run this (uv.lock is
+#     committed, ADR-013). It's an operator action, not a build step.
+#   - Keeps `scripts/` free of anything that would surprise a cold checkout.
+#   - workflow_dispatch means a single "Run workflow" click in the GitHub UI.
+#
+# Security posture:
+#   - Uses GITHUB_TOKEN only (no third-party secrets, ADR-013).
+#   - Opens a PR instead of pushing to main — human review required before
+#     a lockfile change lands, which is how we keep supply-chain drift visible.
+
+name: Relock dependencies
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why relock? (appears in the PR body)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  relock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.5.x"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Regenerate lockfile
+        run: uv lock
+
+      - name: Verify the lock still resolves cleanly
+        run: uv sync --frozen --extra dev
+
+      - name: Open pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: chore/relock-${{ github.run_id }}
+          title: "chore: regenerate uv.lock"
+          commit-message: "chore: regenerate uv.lock"
+          body: |
+            Automated lockfile regeneration.
+
+            **Reason given by operator:** ${{ inputs.reason }}
+
+            **Before merging, verify:**
+            - [ ] `uv sync --frozen --extra dev` succeeds locally
+            - [ ] Full test suite passes (CI will run it on this PR)
+            - [ ] No unexpected major-version jumps in the diff
+            - [ ] SECURITY.md V-02 (supply chain) — check that new transitive
+                  deps aren't from unknown publishers
+
+            Triggered by: @${{ github.actor }}
+          labels: |
+            dependencies
+            automated

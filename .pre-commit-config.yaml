@@ -1,0 +1,66 @@
+# Pre-commit hooks for Auditable Design.
+#
+# Install once per clone:
+#     uv run pre-commit install
+#
+# Run manually on all files (useful after pulling):
+#     uv run pre-commit run --all-files
+#
+# Threat-model anchors:
+#   - SECURITY.md V-01 (API key leak): gitleaks + detect-private-key as
+#     last-line defense before a push ever leaves the laptop. GitHub
+#     push-protection is a second layer; CI gitleaks is a third.
+#   - ADR-013: "no secrets in CI" — the same rule applies at commit time.
+#
+# Performance budget: the whole suite should stay under ~5s on a warm
+# cache so it doesn't become a thing developers disable.
+
+repos:
+  # ─── generic hygiene ─────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=2048"]
+      - id: check-case-conflict
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+      - id: detect-private-key
+      - id: end-of-file-fixer
+        exclude: '\.svg$'
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+      - id: trailing-whitespace
+        exclude: '\.md$'
+
+  # ─── secret scanning ─────────────────────────────────────────────────
+  # Gitleaks catches patterns push-protection doesn't know about, and
+  # catches them before push (push-protection fires during `git push`).
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+
+  # ─── Python lint + format ────────────────────────────────────────────
+  # Ruff config lives in pyproject.toml [tool.ruff]. Using the native
+  # pre-commit mirror so we don't re-install ruff into the hook env.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.3
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  # ─── pytest collect-only ─────────────────────────────────────────────
+  # Fast syntax/import sanity before commit. Full suite runs in CI.
+  - repo: local
+    hooks:
+      - id: pytest-collect-only
+        name: pytest collect-only (import sanity)
+        entry: uv run pytest --collect-only -q
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+        always_run: true
