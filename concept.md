@@ -407,7 +407,7 @@ Every layer has defined success signals, identified failure modes, fallbacks, an
 **Brand position for the author:**
 - *Auditable Design* establishes a methodological signature: design as a system of traceable, defensible decisions, not as aesthetic output
 - The name extends naturally to keynote, consulting, methodology practice, and internal transformation programs
-- Fits the author's existing body of work: SOT methodology, audit frameworks at ING, and the *Beyond the Loop* manifesto
+- Fits the author's existing body of work: SOT methodology, enterprise audit frameworks, and the *Beyond the Loop* manifesto
 
 ## 18. Success criteria for the hackathon
 
