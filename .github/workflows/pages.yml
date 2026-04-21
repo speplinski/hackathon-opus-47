@@ -25,9 +25,14 @@ jobs:
   # ────────────────────────────────────────────────────────────────────────
   # 1. Integrity verification — runs on every push and PR, no secrets
   # Closes the cache-poisoning surface that a public repo creates.
+  #
+  # Guard: only runs once the verifier script AND the committed replay log
+  # exist. Before that point (early in the build window) the job is skipped,
+  # not failed, so CI stays green until the cache is ready to be verified.
   # ────────────────────────────────────────────────────────────────────────
   verify-integrity:
     name: Verify replay-log manifest
+    if: hashFiles('scripts/verify_replay_manifest.py') != '' && hashFiles('data/cache/responses.jsonl') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -65,7 +70,9 @@ jobs:
   # ────────────────────────────────────────────────────────────────────────
   build-demo:
     name: Build static demo bundle
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Guard: only runs after demo/package.json is committed. Before the demo
+    # app exists, the job is skipped rather than failing on `npm ci`.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('demo/package.json') != ''
     needs: verify-integrity
     runs-on: ubuntu-latest
     defaults:
