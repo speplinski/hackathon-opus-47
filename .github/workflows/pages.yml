@@ -1,0 +1,119 @@
+name: Build and deploy demo to GitHub Pages
+
+# No ANTHROPIC_API_KEY is referenced anywhere in this workflow.
+# The pipeline runs on the author's machine; this workflow only builds and
+# publishes the static demo bundle, and verifies the integrity of the replay log.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+
+  # ────────────────────────────────────────────────────────────────────────
+  # 1. Integrity verification — runs on every push and PR, no secrets
+  # Closes the cache-poisoning surface that a public repo creates.
+  # ────────────────────────────────────────────────────────────────────────
+  verify-integrity:
+    name: Verify replay-log manifest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install project
+        run: uv sync --frozen
+
+      - name: Recompute replay-log manifest and compare
+        run: |
+          # scripts/verify_replay_manifest.py recomputes sha256 per entry
+          # plus a tree hash, and diffs against the committed manifest.
+          # Any discrepancy → non-zero exit → CI fails.
+          uv run python scripts/verify_replay_manifest.py \
+            --log data/cache/responses.jsonl \
+            --manifest data/cache/responses.manifest.sha256
+
+      - name: Scan working tree for committed secrets
+        # Belt-and-suspenders: GitHub push-protection catches most keys,
+        # but a local Gitleaks pass costs nothing and catches patterns that
+        # push-protection does not yet know about.
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ────────────────────────────────────────────────────────────────────────
+  # 2. Build demo — deterministic; no network access to Anthropic
+  # ────────────────────────────────────────────────────────────────────────
+  build-demo:
+    name: Build static demo bundle
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify-integrity
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: demo
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: demo/package-lock.json
+
+      - name: Install deps (frozen lockfile)
+        run: npm ci
+
+      - name: Audit deps (fail on high severity)
+        run: npm audit --production --audit-level=high
+
+      - name: Bundle frozen pipeline artifacts into demo/public/data
+        working-directory: ${{ github.workspace }}
+        run: |
+          # Copies frozen JSON from data/derived + data/log/optimization.jsonl
+          # into demo/public/data/ without rerunning the pipeline.
+          python scripts/build_demo_bundle.py
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: demo/dist
+
+  # ────────────────────────────────────────────────────────────────────────
+  # 3. Deploy — only after a successful build on main
+  # ────────────────────────────────────────────────────────────────────────
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-demo
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

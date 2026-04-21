@@ -1,0 +1,140 @@
+[project]
+name = "auditable-design"
+version = "0.1.0"
+description = "Auditable Design — feedback-driven design with a canonical audit loop. Built with Opus 4.7 Hackathon, 21–26 April 2026."
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+authors = [
+    { name = "Szymon P. Peplinski", email = "szymon@generatywnie.com" },
+]
+license = { text = "MIT" }
+
+# Runtime dependencies
+# Pins are conservative — tested versions, not bleeding edge.
+# Bumps go through Dependabot (see .github/dependabot.yml).
+dependencies = [
+    # Claude
+    "anthropic>=0.40.0,<1.0.0",
+
+    # Data modelling
+    "pydantic>=2.7,<3.0",
+    "pydantic-settings>=2.3,<3.0",
+
+    # Embedding + clustering (Layer 3)
+    "sentence-transformers>=3.0,<4.0",
+    "hdbscan>=0.8.33,<0.9",
+    "numpy>=1.26,<3.0",
+    "scikit-learn>=1.4,<2.0",
+
+    # Observability
+    "structlog>=24.1,<26.0",
+
+    # Resilience
+    "tenacity>=8.2,<10.0",
+
+    # Configs
+    "pyyaml>=6.0,<7.0",
+
+    # Review intake
+    "google-play-scraper>=1.2.7,<2.0",
+
+    # CLI
+    "typer>=0.12,<1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0,<9.0",
+    "pytest-asyncio>=0.23,<1.0",
+    "pytest-cov>=5.0,<7.0",
+    "ruff>=0.5,<1.0",
+    "mypy>=1.10,<2.0",
+    "types-pyyaml>=6.0,<7.0",
+    "pre-commit>=3.7,<5.0",
+    # NOTE: gitleaks is a Go binary, not a Python package. Installed via
+    # the pre-commit hook (`.pre-commit-config.yaml`) and via the
+    # `gitleaks/gitleaks-action@v2` step in `.github/workflows/pages.yml`.
+]
+
+[project.scripts]
+auditable = "auditable_design.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/auditable_design"]
+
+[tool.uv]
+# Frozen lockfile: `uv sync --frozen` is required in CI (see pages.yml).
+# Local dev: `uv sync` to regenerate and `uv lock` to bump.
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+# Tight but not hostile. E/F are errors; B catches common bugs; I sorts imports;
+# RUF catches ruff-specific lints; UP modernises syntax; S catches security smells.
+select = ["E", "F", "W", "B", "I", "RUF", "UP", "S"]
+ignore = [
+    "S101",   # asserts are fine in tests
+    "E501",   # long lines caught by formatter, not linter
+    # Typographic punctuation (em-dash "—", en-dash "–", right single quote "'")
+    # is used intentionally in this bilingual PL/EN codebase — particularly in
+    # prose comments, docstrings, and string constants for the Polish-facing UI.
+    # Ruff's "ambiguous unicode" checks would fight the house style.
+    "RUF001", # ambiguous chars in strings
+    "RUF002", # ambiguous chars in docstrings
+    "RUF003", # ambiguous chars in comments
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S"]              # test files don't need security lints
+"scripts/*" = ["S603", "S607"] # scripts can shell out
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+filterwarnings = [
+    "error",
+    # Known noisy deprecations from upstream libs — review on each bump.
+    "ignore::DeprecationWarning:pkg_resources",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+# sentence-transformers, hdbscan, and google-play-scraper lack stubs;
+# we don't gate on untyped imports from those.
+[[tool.mypy.overrides]]
+module = [
+    "hdbscan.*",
+    "sentence_transformers.*",
+    "google_play_scraper.*",
+    "sklearn.*",
+]
+ignore_missing_imports = true
+
+[tool.coverage.run]
+branch = true
+source = ["src/auditable_design"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
