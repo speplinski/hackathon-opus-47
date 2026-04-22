@@ -351,15 +351,17 @@ One wrapper around the Anthropic SDK. Dual-mode (ADR-011): `"live"` hits the API
 
 Responsibilities:
 
-- **Attach skill assets.** Load `SKILL.md` + any `references/*.md` from the named skill directory; assemble the system prompt.
-- **Wrap user text (ADR-010, P6).** Every user-supplied string passes through `prompt_builder.wrap_user_text(id, text)` which produces `<user_review id="...">{text}</user_review>`; the system prompt declares those tags data-not-instructions.
+- **Attach skill assets (layer-side).** The calling layer loads `SKILL.md` + any `references/*.md` from the named skill directory and assembles the system prompt. The client receives pre-assembled `system` and `user` strings — it does not read skill files itself. This keeps `claude_client` free of filesystem concerns beyond the replay log.
+- **Wrap user text (ADR-010, P6; layer-side).** Every user-supplied string is wrapped by the calling layer through `prompt_builder.wrap_user_text(id, text)`, which produces `<user_review id="...">{text}</user_review>`; the system prompt (assembled by the layer) declares those tags data-not-instructions. The client has no visibility into `review_id`, so wrapping necessarily lives one level up.
 - **Structured output (ADR-002).** Load `skills/<name>/schema.json`, pass as `response_format={"type":"json_schema", "json_schema":...}`. Pydantic-validate the returned tail; on failure, one repair-retry with the validation error appended; on second failure, quarantine the record to `data/quarantine/{call_id}.json` and surface in the pipeline log.
 - **Replay log.** Append-only `data/cache/responses.jsonl`, one record per call:
-  `{call_id, key_hash, skill_id, skill_hash, model, temperature, prompt, response, input_tokens, output_tokens, timestamp}`. Key hash = `sha256(skill_id, skill_hash, prompt, model, temperature)`.
+  `{call_id, key_hash, skill_id, skill_hash, model, temperature, prompt, response, input_tokens, output_tokens, cost_usd, timestamp}`. The `prompt` field is the concatenation of system and user rendered by `_canonical_prompt(system, user)` (tab-delimited `SYSTEM:\t{system}\tUSER:\t{user}`). `cost_usd` is computed from `model + input_tokens + output_tokens` by `estimate_cost_usd(...)` so that the manifest verifier (§10, ADR-011) can be kept single-file and does not need to reproduce the pricing table. Key hash canonicalisation is described in §10.
 - **Request coalescing (ADR-005).** In-memory `dict[key_hash, asyncio.Future]`; concurrent callers with matching keys await the same future instead of duplicating the API call.
 - **Rate limiting.** Token-bucket limiter per model; configurable RPM. Env var `MAX_CLAUDE_SPEND_USD` halts the pipeline with a clear error message if exceeded.
 - **Exponential backoff** on 429/5xx with jitter.
-- **Per-call logging** via `logging_setup.py` (ADR-012): `layer`, `run_id`, `skill_id`, `model`, `elapsed_s`, `input_tokens`, `output_tokens`, `cost_usd_estimate`, `cache_hit`.
+- **Per-call logging** via `logging_setup.py` (ADR-012): `layer`, `run_id`, `skill_id`, `model`, `elapsed_s`, `input_tokens`, `output_tokens`, `cost_usd_estimate`, `cache_hit`. The client measures `elapsed_s` around the dispatch itself (not cache hits) and surfaces it on `ClaudeResponse.elapsed_s` so the orchestrator can copy it into `data/log/claude_calls.jsonl` without re-timing.
+
+**Day-2 scope note.** The Day-2 client (`IMPLEMENTATION_PLAN.md § 3`) implements only: dual-mode, replay log, per-run USD kill-switch, concurrency semaphore, tenacity backoff, and call-level logging. Request coalescing, structured-output schema enforcement, quarantine, token-bucket rate limiter, and per-call prompt+max_tokens ceiling (§ 5.5 pkt 1) are deferred until a concrete call site requires them. This is enforced in the module docstring of `claude_client.py`.
 
 Model selection (ADR-009): Opus 4.7 for L2 (structure extraction, hardest step), L5 (reconciliation), L7/L8 (generation); Sonnet 4.6 for L1 classification and L4 audits where throughput matters more than depth. Model choice is per-skill via `RunContext.model_config`; fallback to a single model if cost/rate limits force it.
 
@@ -525,7 +527,19 @@ Every `AuditVerdict`, `DesignDecision`, and `OptimizationIteration` record captu
 - timestamp
 - `skill_hash` — `sha256` over the **entire skill directory** (SKILL.md + all `references/*.md` + `rubric.md` + `schema.json` + `examples/*`), not just SKILL.md alone (ADR-003).
 
-**Replay log (ADR-011).** `data/cache/responses.jsonl` is an append-only log, one line per Claude call, with `key_hash = sha256(skill_id, skill_hash, prompt, model, temperature)`. At submission time, `scripts/generate_replay_manifest.py` produces `data/cache/responses.manifest.sha256` — one hash per entry plus a tree hash — so reviewers can verify the log hasn't been tampered with.
+**Replay log (ADR-011).** `data/cache/responses.jsonl` is an append-only log, one line per Claude call. At submission time, `scripts/generate_replay_manifest.py` produces `data/cache/responses.manifest.sha256` — one hash per entry plus a tree hash — so reviewers can verify the log hasn't been tampered with.
+
+The **canonical key hash** is:
+
+```
+key_hash = sha256(
+    "\t".join([skill_id, skill_hash, model, repr(float(temperature)), str(int(max_tokens))])
+    + "\x00"
+    + "\x00".join([system, user])
+)
+```
+
+Three things to note. `system` and `user` are hashed separately (with a `\x00` separator) rather than after concatenation — this avoids accidental collisions if boundaries shift. `max_tokens` is part of the key because the same prompt truncated at different budgets is semantically different evidence (a clipped verdict is not the same as a full one). Stored in the JSONL line, however, the `prompt` field is the **concatenated** form (`SYSTEM:\t{system}\tUSER:\t{user}`) so a reviewer inspecting `responses.jsonl` sees exactly what was sent without reconstructing it from two fields.
 
 **Two client modes.** `RunContext.client_mode` selects:
 
@@ -592,6 +606,8 @@ Not published (enforced via `.gitignore`):
 - `data/log/**` — verbose per-call logs may contain prompts; kept local
 - `data/quarantine/**` — failed structured-output records; kept local for debugging
 - `demo/node_modules/`, `demo/dist/`, `demo/.vite/`
+
+**Replay log sensitivity.** `data/cache/responses.jsonl` is published to the public repo and contains, verbatim, the full `system` and `user` prompts of every Claude call plus the full model response. For this submission the prompt content is derived exclusively from `data/raw/duolingo_reviews.jsonl` — public Google Play data with author-hashed usernames — so the replay log is safe to publish. **Anyone reusing this client** on non-public content (internal feedback, support tickets, user emails, anything with PII) must either scrub inputs before calling `Client.call`, mark `responses.jsonl` as local-only in their own `.gitignore`, or both. The replay log is exactly as sensitive as the prompts the caller hands it; the client does not redact.
 
 Published to `gh-pages` branch by Actions (public, CDN-fronted):
 
