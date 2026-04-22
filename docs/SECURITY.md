@@ -207,7 +207,7 @@ Google Play reviews are public, but Duolingo's Play Store listing exposes author
 **Mitigations:**
 
 1. `author_hash = sha256(salt || author_name)` where `salt` is a per-project random 32-byte value stored locally in `.env` and **never committed**. Rainbow-table lookup is infeasible; forward-traceability (link from hash to name) is possible only for the author.
-2. `data/raw/duolingo_reviews.jsonl` schema stores `author_hash`, not `author`. The raw-name column is dropped at ingestion time.
+2. `data/raw/corpus.jsonl` schema stores `author_hash`, not `author`. The raw-name column is dropped at ingestion time.
 3. Review text itself is public by virtue of being on Google Play; the project quotes verbatim but does not attempt to re-attribute to identity.
 4. README notes the pseudonymization approach.
 

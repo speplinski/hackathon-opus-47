@@ -10,9 +10,9 @@ Framing is instrumental, not targeted. The goal is to demonstrate a reproducible
 
 Three properties make Duolingo a strong fit for a proof-of-method corpus:
 
-- **Publicly documented design crisis.** In April 2025, CEO Luis von Ahn announced an "AI-first" strategic pivot that included replacing contractor roles with AI. The announcement drew sustained, well-documented user backlash across app stores, social media, and tech press.[^1][^2] The resulting review corpus is dense with UX-relevant complaints — exactly the signal Auditable Design is built to structure.
+- **UX signal density.** Spot sampling of early-2026 review windows shows approximately 40–60% of negative reviews target UX concerns (paywall behaviour, hearts/streak mechanics, notification patterns, ad placement, feature removal) rather than content quality or billing. This is the target ratio for Layer 1 classification success — a three-week window of current reviews (see §2) is already dense enough to demonstrate the method.
 - **Corpus accessibility.** Google Play and App Store reviews are publicly accessible and both platforms' Terms of Service permit analytical use of publicly displayed content.[^3][^4] No scraping of private data, no authentication walls, no TOS concerns.
-- **UX signal density.** Spot sampling of late-2025 / early-2026 review windows shows approximately 40–60% of negative reviews target UX concerns (paywall behaviour, hearts/streak mechanics, notification patterns, ad placement, feature removal) rather than content quality or billing. This is the target ratio for Layer 1 classification success.
+- **Public strategic context.** Duolingo's 2025 "AI-first" pivot[^1][^2] and the product's ongoing freemium-funnel tensions (§3–§5) are well-documented in press and investor filings, which gives Layer 6 a real, sourceable business model to weigh audit findings against. The pivot is referenced here as publicly documented context, not as the subject of this demo.
 
 ## 2. Corpus selection criteria
 
@@ -20,7 +20,7 @@ Three properties make Duolingo a strong fit for a proof-of-method corpus:
 | :------------------------ | :--------------------------------------------------------------------------------------------------- |
 | Sources                   | Google Play (primary), App Store (secondary, for parity check)                                       |
 | Language                  | English only (L1 classifier is English-tuned for the hackathon)                                      |
-| Date window               | 2025-04-01 – 2026-04-15 (covers pre- and post-AI-first-announcement)                                 |
+| Date window               | 2026-04-01 – 2026-04-21 (three-week early-2026 steady-state; see §1 for framing)                     |
 | Star rating filter        | 1–3 stars (high signal for UX pain); 4–5 star sample retained as control                             |
 | Length filter             | ≥ 80 characters and ≤ 4000 characters (too-short reviews lack structure; too-long reviews are rare)  |
 | Target size               | 600 reviews (60 for pilot, 600 for full run, same random seed)                                       |
@@ -28,7 +28,7 @@ Three properties make Duolingo a strong fit for a proof-of-method corpus:
 | Deduplication             | Exact-text dedup; near-duplicate dedup deferred to clustering in L3                                  |
 | License note              | Review text quoted under fair use; author & app attribution retained in every evidence reference    |
 
-Intake procedure is implemented in `scripts/collect_corpus.py` (Day 1 afternoon). Reviews are written once to `data/raw/corpus.jsonl`, the file's sha256 is frozen in `data/raw/corpus.manifest.sha256`, and the pipeline reads only from the frozen snapshot.
+Intake procedure is implemented in `scripts/collect_reviews.py` (Day 1 afternoon). Reviews are written once to `data/raw/corpus.jsonl`, the file's sha256 is frozen in `data/raw/corpus.manifest.sha256`, and the pipeline reads only from the frozen snapshot.
 
 ## 3. Freemium model (public facts)
 

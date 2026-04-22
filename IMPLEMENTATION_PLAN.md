@@ -70,9 +70,10 @@ quarantine dir, token-bucket rate limiter — add only when a concrete call site
 
 ### `scripts/collect_reviews.py` + run
 
-Google Play scraper (`google-play-scraper` lib), English only, last 12 months,
-target 500–1000 reviews. Output: `data/raw/duolingo_reviews.jsonl`. Idempotent (dedup by
-review_id). Kick off the full scrape to run in background.
+Google Play scraper (`google-play-scraper` lib), English only, 2026-04-01 → 2026-04-21,
+target 600 reviews (CONTEXT §2). Output: `data/raw/corpus.jsonl` + sha256 manifest
+(`data/raw/corpus.manifest.sha256`). Idempotent (dedup by `review_id`). Kick off the
+full scrape to run in background.
 
 ### `src/auditable_design/layers/l1_classify.py`
 
@@ -221,7 +222,7 @@ Run the findings table end-to-end and confirm each is closed:
 - V-03 — grep the codebase for raw user-text f-strings into prompts: `grep -rn 'f".*{review' src/` returns nothing.
 - V-05 — ESLint passes with `react/no-danger: error`; CSP meta present in `demo/index.html`; `stripTags` applied in bundle builder.
 - V-07 — `npm audit --audit-level=high` clean; Dependabot enabled and listing no open high-severity PRs.
-- V-09 — PII grep on `data/raw/duolingo_reviews.jsonl` for emails, phone numbers, `I am` statements; quarantine any hits.
+- V-09 — PII grep on `data/raw/corpus.jsonl` for emails, phone numbers, `I am` statements; quarantine any hits.
 - V-15 — `npm test` passes the Python↔TS weighted-sum parity test.
 
 ### Evening (18:00–23:00) — Backup video + final polish

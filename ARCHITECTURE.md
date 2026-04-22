@@ -147,7 +147,7 @@ hackathon-opus-47/
 │       └── graph/                      # D3 renderers
 │
 ├── data/
-│   ├── raw/duolingo_reviews.jsonl      # corpus (~500–1000 items)
+│   ├── raw/corpus.jsonl                # frozen corpus (600 items, CONTEXT §2)
 │   ├── derived/                        # per-layer outputs
 │   ├── log/optimization.jsonl          # append-only
 │   ├── artifacts/                      # final deliverables
@@ -597,7 +597,7 @@ Published to `main` (public):
 - `concept.md`, `ARCHITECTURE.md`, `IMPLEMENTATION_PLAN.md`, `README.md`, `docs/`
 - All source under `src/`, `skills/`, `scripts/`, `demo/`
 - `data/cache/responses.jsonl` + `responses.manifest.sha256` — replay log pinned for reproducibility
-- `data/raw/duolingo_reviews.jsonl` — public Google Play data, author-hashed
+- `data/raw/corpus.jsonl` — public Google Play data, author-hashed
 - `data/derived/**` and `data/artifacts/**` — frozen pipeline outputs for the submission run
 
 Not published (enforced via `.gitignore`):
@@ -607,7 +607,7 @@ Not published (enforced via `.gitignore`):
 - `data/quarantine/**` — failed structured-output records; kept local for debugging
 - `demo/node_modules/`, `demo/dist/`, `demo/.vite/`
 
-**Replay log sensitivity.** `data/cache/responses.jsonl` is published to the public repo and contains, verbatim, the full `system` and `user` prompts of every Claude call plus the full model response. For this submission the prompt content is derived exclusively from `data/raw/duolingo_reviews.jsonl` — public Google Play data with author-hashed usernames — so the replay log is safe to publish. **Anyone reusing this client** on non-public content (internal feedback, support tickets, user emails, anything with PII) must either scrub inputs before calling `Client.call`, mark `responses.jsonl` as local-only in their own `.gitignore`, or both. The replay log is exactly as sensitive as the prompts the caller hands it; the client does not redact.
+**Replay log sensitivity.** `data/cache/responses.jsonl` is published to the public repo and contains, verbatim, the full `system` and `user` prompts of every Claude call plus the full model response. For this submission the prompt content is derived exclusively from `data/raw/corpus.jsonl` — public Google Play data with author-hashed usernames — so the replay log is safe to publish. **Anyone reusing this client** on non-public content (internal feedback, support tickets, user emails, anything with PII) must either scrub inputs before calling `Client.call`, mark `responses.jsonl` as local-only in their own `.gitignore`, or both. The replay log is exactly as sensitive as the prompts the caller hands it; the client does not redact.
 
 Published to `gh-pages` branch by Actions (public, CDN-fronted):
 

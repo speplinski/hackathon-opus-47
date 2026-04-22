@@ -36,7 +36,7 @@ Three sub-theses:
 
 ## 2. Case study
 
-Real corpus of Duolingo reviews (~500–1000 items from Google Play, last 12 months).
+Real corpus of Duolingo reviews (600 items from Google Play, three-week early-2026 window; see `CONTEXT_DUOLINGO.md` §2 for exact criteria).
 
 **Framing:** "Proof of method on real feedback from a popular app" — not "critique of Duolingo". Every insight in the demo must be anchored in a literal quote from a specific, publicly available review. The system demonstrates a reproducible method; the choice of Duolingo is instrumental, not targeted.
 
