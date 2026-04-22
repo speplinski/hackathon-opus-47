@@ -346,6 +346,21 @@ _RETRIABLE_ERRORS: tuple[type[BaseException], ...] = (
 )
 
 
+def _omits_sampling_params(model: str) -> bool:
+    """Whether this model rejects ``temperature`` / ``top_p`` / ``top_k``.
+
+    Claude Opus 4.7 (released 2026-04-16) returns 400 for any non-default
+    value on the sampling-control parameters. Dated variants
+    (``claude-opus-4-7-YYYYMMDD``) inherit the restriction. Extend the
+    prefix check when later Sonnet/Haiku models adopt the same contract.
+
+    We still record the caller-requested ``temperature`` in ``key_hash``
+    and in the replay log — the replay log is authoritative for audit
+    replay; the API payload is a downstream representation. See ADR-011.
+    """
+    return model.startswith("claude-opus-4-7")
+
+
 # ---------------------------------------------------------------------------
 # Client
 # ---------------------------------------------------------------------------
@@ -603,13 +618,17 @@ class Client:
             reraise=True,
         ):
             with attempt:
-                return await self._sdk_client.messages.create(
-                    model=model,
-                    system=system,
-                    messages=[{"role": "user", "content": user}],
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                )
+                kwargs: dict[str, Any] = {
+                    "model": model,
+                    "system": system,
+                    "messages": [{"role": "user", "content": user}],
+                    "max_tokens": max_tokens,
+                }
+                # Opus 4.7 rejects non-default ``temperature`` with 400.
+                # Older models still require it. See ``_omits_sampling_params``.
+                if not _omits_sampling_params(model):
+                    kwargs["temperature"] = temperature
+                return await self._sdk_client.messages.create(**kwargs)
         raise AssertionError("unreachable: AsyncRetrying with reraise=True")  # pragma: no cover
 
     @staticmethod

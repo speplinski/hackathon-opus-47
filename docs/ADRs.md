@@ -361,12 +361,12 @@ Every skill emits severity on a 0–10 scale, and each `skills/<name>/rubric.md`
 
 ## ADR-009: Claude model mix (Opus for reasoning-heavy, Sonnet for throughput)
 
-**Status:** Proposed (cost/quality choice worth being explicit about)
-**Date:** 2026-04-21
+**Status:** Partially accepted. **L1 resolved 2026-04-22 on Opus 4.6 via pilot** (see "L1 pilot findings" below). Other layers (L2, L4, L5, L7, L8) remain proposed pending their own pilots.
+**Date:** 2026-04-21 (original), 2026-04-22 (L1 resolution)
 
 ### Context
 
-ARCHITECTURE §5.2 says Opus 4.7 for L2 (structure extraction), L5 (reconciliation), L7/L8 (generation); Sonnet 4.6 for L1 (classification) and L4 (audits). L4 is the highest-volume layer (30–48 calls per run, re-run during iteration). Opus for L4 would be 3–5× cost.
+ARCHITECTURE §5.2 originally specified Opus 4.7 for L2 (structure extraction), L5 (reconciliation), L7/L8 (generation); Sonnet 4.6 for L1 (classification) and L4 (audits). L4 is the highest-volume layer (30–48 calls per run, re-run during iteration). Opus for L4 would be 3–5× cost.
 
 ### Decision
 
@@ -389,10 +389,39 @@ Opus for L2 / L5 / L7 / L8 is justified because:
 - Per-layer budget tracking: L4 is high-volume-low-cost-per-call; L7/L8 are low-volume-high-cost-per-call. Total spend estimate: ~$20–60 for a full run with cold cache.
 - Model-specific rate limits; rate limiter from ADR-005 keys on model.
 
+### L1 pilot findings (2026-04-22)
+
+Three-way pilot on a 20-review stratified sample (12 UX-positive + 8 UX-negative, seed=42; corpus `sha256=a1ed84d0…`, prompt `skill_hash=b5325779…`, gold CSV `data/eval/l1_gold.csv`) compared Sonnet 4.6, Opus 4.6, and Opus 4.7 against the L1 triad (is_ux accuracy ≥0.85, mean Jaccard ≥0.60, confidence delta >0):
+
+| Model | is_ux acc | mean Jaccard | conf delta | run_id |
+|---|---|---|---|---|
+| Sonnet 4.6 | 0.850 | 0.905 | +0.032 | `l1-pilot-sonnet-20-v2` |
+| Opus 4.6 | 0.850 | **0.955** | +0.057 | `l1-pilot-opus46-20-v2` |
+| Opus 4.7 | 0.850 | 0.863 | +0.059 | `l1-pilot-opus47-20-v2` |
+
+Inter-model Cohen's kappa on `is_ux_relevant` = 1.000 for every pair. All three classifiers agree on the same 17/20 as UX-relevant and the same 3/20 as off-topic; the three misses against gold are shared (the labels differ from gold but the models agree among themselves). **The binary is_ux classification is stable at model-level; the between-model deltas sit entirely in `rubric_tags` granularity.**
+
+The prompt iterated v1 → v2 reactively on pilot v1 feedback: gold had two errors surfaced by the models (row `4c1fd6`: lesson-completion bug is core-loop, not off-topic; row `5d38e8`: explicit mention of missed reminder warrants `notifications` tag), and the prompt's `Tag usage notes` were extended to disambiguate implicit `feature_removal` (hearts→energy) and narrow `off_topic` to outside-product content. Verification script: `scripts/compare_models.py`.
+
+**Decision for L1: Opus 4.6.** This supersedes the original plan of Sonnet 4.6 for L1. Rationale:
+
+- Best Jaccard among the three (0.955 vs Sonnet 0.905 vs Opus 4.7 0.863). Extrapolated to N=600, that is ~30 additional reviews whose tag-set matches gold vs Sonnet, ~55 more than Opus 4.7.
+- Confidence delta +0.057 (vs Sonnet's +0.032). L2 aggregates per-review tag confidence when composing per-cluster evidence; sharper calibration upstream reduces noise downstream.
+- Deliverable horizon (2026-04-26) fits well inside Opus 4.6's EOL (2026-06-15). Post-EOL replay works indefinitely because the replay log (ADR-011) freezes outputs; only fresh live re-runs would be blocked.
+- Cost premium over Sonnet is acceptable at pilot N=20 scale (~$0.05 pilot → ~$1–2 projected for L1 on N=600).
+
+**Acknowledged limitations:**
+
+- *Opus 4.6 EOL 2026-06-15.* Any live re-run of the L1 layer after that date will fail; reviewers replay from `data/cache/responses.jsonl` per ADR-011, which is the intended post-deadline path.
+- *Opus 4.7 tag-substitution pattern.* On pilot v3, Opus 4.7 disagreed with Opus 4.6 on 3/20 reviews, and in each case the disagreement was a tag *substitution* (e.g. `paywall → bug`, `bug+content_quality → interface_other`) rather than an add/drop. All three substitutions moved away from gold. If a future pilot migrates L2+ layers to 4.7, check for the same pattern on those layers' taxonomies.
+- *`claude-opus-4-7*` and `temperature`.* Opus 4.7 (released 2026-04-16) returns 400 for any non-default `temperature` / `top_p` / `top_k`. `claude_client.py` now drops `temperature` from the request for any model matching `claude-opus-4-7*` (helper: `_omits_sampling_params`). The replay log and `ClaudeResponse.temperature` still record caller-intent `0.0` — the replay log is authoritative for audit replay; the API payload is a downstream representation. Anthropic's own release notes confirm `temperature=0` never guaranteed identical outputs on earlier Claudes either, so this is a make-it-explicit change, not a loss of a previously-hard guarantee.
+
 ### Action items
 
-- [ ] `RunContext.model_config` defaults laid out explicitly.
-- [ ] Day 3 morning: audit skills spot-checked on Sonnet on 5-cluster subset. Escalate to Opus if quality insufficient.
+- [x] `RunContext.model_config` defaults laid out explicitly.
+- [x] L1 pilot (stratified N=20, three-model): Opus 4.6 selected for full N=600.
+- [ ] Flip `MODEL` default in `src/auditable_design/layers/l1_classify.py` from `claude-sonnet-4-6` to `claude-opus-4-6` (and the corresponding line in `ARCHITECTURE.md §5.2`).
+- [ ] L2 / L4 / L5 / L7 / L8 pilots — same pattern (stratified mini-sample, triad-style metric, cross-model kappa) when each layer reaches implementation.
 
 ---
 

@@ -363,7 +363,7 @@ Responsibilities:
 
 **Day-2 scope note.** The Day-2 client (`IMPLEMENTATION_PLAN.md § 3`) implements only: dual-mode, replay log, per-run USD kill-switch, concurrency semaphore, tenacity backoff, and call-level logging. Request coalescing, structured-output schema enforcement, quarantine, token-bucket rate limiter, and per-call prompt+max_tokens ceiling (§ 5.5 pkt 1) are deferred until a concrete call site requires them. This is enforced in the module docstring of `claude_client.py`.
 
-Model selection (ADR-009): Opus 4.7 for L2 (structure extraction, hardest step), L5 (reconciliation), L7/L8 (generation); Sonnet 4.6 for L1 classification and L4 audits where throughput matters more than depth. Model choice is per-skill via `RunContext.model_config`; fallback to a single model if cost/rate limits force it.
+Model selection (ADR-009): Opus 4.6 for L1 classification (resolved via the 2026-04-22 three-way pilot — see ADR-009 "L1 pilot findings"); Opus 4.7 for L2 (structure extraction, hardest step), L5 (reconciliation), L7/L8 (generation) — these remain on the original plan pending their own pilots; Sonnet 4.6 for L4 audits where throughput matters more than depth. Model choice is per-skill via `RunContext.model_config`; fallback to a single model if cost/rate limits force it.
 
 ### 5.3 Parallelism
 

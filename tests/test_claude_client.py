@@ -341,6 +341,70 @@ async def test_live_rejects_short_skill_hash(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Sampling-param omission for Opus 4.7+
+# ---------------------------------------------------------------------------
+
+
+def test_omits_sampling_params_matches_opus_4_7_family() -> None:
+    """Helper predicate: only Opus 4.7-family models drop temperature.
+
+    Extend when a second model adopts the same restriction — the
+    assertions below will remind us to update both the helper and
+    this test in the same PR.
+    """
+    from auditable_design.claude_client import _omits_sampling_params
+
+    # 4.7 and dated variants — drop temperature.
+    assert _omits_sampling_params("claude-opus-4-7")
+    assert _omits_sampling_params("claude-opus-4-7-20260416")
+    # Everything else we currently dispatch keeps temperature.
+    assert not _omits_sampling_params("claude-opus-4-6")
+    assert not _omits_sampling_params("claude-sonnet-4-6")
+    assert not _omits_sampling_params("claude-haiku-4-5-20251001")
+
+
+@pytest.mark.asyncio
+async def test_opus_4_7_dispatch_omits_temperature(tmp_path: Path) -> None:
+    """Opus 4.7 returns 400 on any non-default ``temperature``. The
+    client must not send it. We still log caller-intent
+    (``temperature=0.0``) to the replay entry — that is the audit
+    record; the API payload is a downstream representation (ADR-011).
+    """
+    sdk = _FakeSDK(_FakeMessages())
+    log = tmp_path / "r.jsonl"
+    c = Client(mode="live", run_id="r", replay_log_path=log, sdk_client=sdk)
+    resp = await c.call(
+        system="s", user="u", model="claude-opus-4-7",
+        skill_id="x", skill_hash=_SKILL_HASH, temperature=0.0,
+    )
+    kwargs = sdk.messages.calls[0]
+    assert "temperature" not in kwargs, (
+        f"temperature must not be sent to Opus 4.7 — API would 400. "
+        f"Got kwargs keys: {sorted(kwargs)}"
+    )
+    # But the replay log records caller-intent temperature.
+    entry = json.loads(log.read_text(encoding="utf-8").splitlines()[0])
+    assert entry["temperature"] == 0.0
+    # And ClaudeResponse still carries it for downstream observability.
+    assert resp.temperature == 0.0
+
+
+@pytest.mark.asyncio
+async def test_opus_4_6_dispatch_still_sends_temperature(tmp_path: Path) -> None:
+    """Belt-and-braces: the 4.7 carve-out must not leak to 4.6 — older
+    models still require temperature to be sent.
+    """
+    sdk = _FakeSDK(_FakeMessages())
+    c = Client(mode="live", run_id="r", replay_log_path=tmp_path / "r.jsonl", sdk_client=sdk)
+    await c.call(
+        system="s", user="u", model="claude-opus-4-6",
+        skill_id="x", skill_hash=_SKILL_HASH, temperature=0.0,
+    )
+    kwargs = sdk.messages.calls[0]
+    assert kwargs.get("temperature") == 0.0
+
+
+# ---------------------------------------------------------------------------
 # Replay mode
 # ---------------------------------------------------------------------------
 
