@@ -206,11 +206,57 @@ class ComplaintGraph(_StrictModel):
 
 
 class InsightCluster(_StrictModel):
+    """A single cluster of pain/expectation nodes produced by L3.
+
+    Notes on semantics (not enforced by the schema, but load-bearing
+    for downstream layers):
+
+    - **Multi-membership is legal and intentional.** A given
+      ``review_id`` may appear in the ``member_review_ids`` of multiple
+      ``InsightCluster`` records — this happens whenever a review's
+      pain and expectation nodes land in different clusters. L4/L5
+      must treat reviews as potentially non-exclusive across clusters.
+
+    - **Label lifecycle.** L3 writes placeholder labels prefixed with
+      ``"UNLABELED:"`` (e.g. ``"UNLABELED:cluster_03"``). Human-readable
+      labels are produced by the **L3b** layer (``l3b_label``, Claude-
+      backed, own ``skill_hashes``) which emits
+      ``l3b_labeled_clusters.jsonl`` rather than rewriting this
+      artifact. See ``layers/l3_cluster.py`` module docstring
+      §"Label lifecycle" for the full rationale.
+
+    - **``centroid_vector_ref`` format.** The value is a pointer string
+      of the form ``"<file>#<index>"`` where ``<file>`` is the
+      basename of the sibling ``.npy`` (e.g. ``"l3_centroids.npy"``)
+      and ``<index>`` is the row index within the stacked array
+      (matching ``cluster_id``'s numeric tail). A reader resolves it as
+      ``np.load(dir / file)[int(index)]``.
+    """
+
     cluster_id: str = Field(..., min_length=1)
-    label: str = Field(..., min_length=1, description="Claude-generated from representative quotes")
-    member_review_ids: list[str] = Field(..., min_length=1)
+    label: str = Field(
+        ...,
+        min_length=1,
+        description=(
+            "Cluster label. L3 writes 'UNLABELED:cluster_NN' placeholders; "
+            "a downstream labeling layer rewrites them via Claude."
+        ),
+    )
+    member_review_ids: list[str] = Field(
+        ...,
+        min_length=1,
+        description=(
+            "Reviews whose pain/expectation nodes fell in this cluster. "
+            "A review may appear in multiple clusters (multi-membership)."
+        ),
+    )
     centroid_vector_ref: str = Field(
-        ..., min_length=1, description="Path to numpy memmap holding the centroid"
+        ...,
+        min_length=1,
+        description=(
+            "Pointer of the form '<file>#<index>' into a sibling .npy "
+            "array of stacked centroids (e.g. 'l3_centroids.npy#3')."
+        ),
     )
     representative_quotes: list[str] = Field(..., min_length=1, max_length=5)
 

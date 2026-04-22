@@ -107,6 +107,7 @@ hackathon-opus-47/
 │   │   ├── l1_classify.py          # UX-relevance filter
 │   │   ├── l2_structure.py         # structure-of-complaint invocation
 │   │   ├── l3_cluster.py           # embedding + HDBSCAN
+│   │   ├── l3b_label.py            # cluster labeling via Claude (planned; concept §6 extension, see §4.4)
 │   │   ├── l4_audit.py             # parallel canonical skill runner
 │   │   ├── l5_reconcile.py         # SOT meta-reconciliation
 │   │   ├── l6_weight.py            # 5-dim business scoring
@@ -232,11 +233,33 @@ class ComplaintGraph(BaseModel):
 ```python
 class InsightCluster(BaseModel):
     cluster_id: str
-    label: str                  # Claude-generated from representative quotes
-    member_review_ids: list[str]
-    centroid_vector_ref: str    # path to numpy memmap for embeddings
-    representative_quotes: list[str]   # top-5 closest to centroid
+    label: str                  # "UNLABELED:cluster_NN" from L3; rewritten by labeling pass
+    member_review_ids: list[str]        # multi-membership allowed (see below)
+    centroid_vector_ref: str            # "<file>#<index>" pointer into sibling .npy
+    representative_quotes: list[str]    # top-5 closest to centroid
 ```
+
+**L3 artifact layout.** L3 writes four files per run:
+
+- `l3_clusters.jsonl` — one `InsightCluster` per line
+- `l3_clusters.jsonl.meta.json` — standard `ArtifactMeta` sidecar (ADR-011); `input_hashes` covers both the L2 graphs file *and* `l3_centroids.npy`, so a reader can detect drift in either upstream
+- `l3_centroids.npy` — stacked `(n_clusters, embedding_dim)` float32 array. Row `i` holds the centroid for `cluster_id == i` — see "Label normalization" below
+- `l3_clusters.provenance.json` — encoder + clustering runtime tuple (model weights hash, torch/sentence-transformers/hdbscan/sklearn versions, platform). Separate from `ArtifactMeta` because runtime fingerprinting is L3-specific; extending `ArtifactMeta` would pollute every layer. **Auditor-facing and informational only** — its contents are not hashed into the replay chain (ADR-011 verifies `jsonl + meta + npy` drift, not `provenance.json` drift). A reviewer consults it to explain *why* two replays diverge; they do not use it to decide *whether* they diverge.
+
+**`centroid_vector_ref` format.** `"<file>#<index>"` where `<file>` is the basename of the sibling `.npy` and `<index>` is the row. Resolution: `np.load(dir / file)[int(index)]`. Kept as a string (not a path + int pair) so it round-trips through JSON without special-casing.
+
+**Label normalization.** L3 remaps clustering-backend labels to a contiguous `0..k-1` range before writing (noise `-1` is preserved but not stored). This makes `cluster_id == row index in l3_centroids.npy` true **by construction** — the pointer is correct regardless of which backend produced the labels or whether that backend happens to use contiguous labels natively. See `_normalize_labels` in `src/auditable_design/layers/l3_cluster.py`.
+
+**Multi-membership.** A `review_id` may appear in `member_review_ids` of multiple clusters — this is expected whenever a review's `pain` and `expectation` nodes land in different clusters. L4/L5 aggregate per-cluster; they do not assume reviews are partitioned.
+
+**Label lifecycle and L3b.** L3 produces `"UNLABELED:cluster_NN"` placeholder labels and writes no `skill_hashes` (no Claude call). Human-readable labels are produced by a distinct downstream layer — **L3b** (`l3b_label`) — which:
+
+- Reads `l3_clusters.jsonl` *only* — `cluster_id` + `representative_quotes` are the sole inputs the labeling skill needs. The three sibling files (`l3_clusters.jsonl.meta.json`, `l3_centroids.npy`, `l3_clusters.provenance.json`) are informational context for a human reviewer, **not** inputs to L3b; they do not appear in L3b's `input_hashes`. Keeping the input contract to a single file means an unrelated bump of torch/hdbscan/sklearn versions (visible only in `provenance.json`) does not invalidate L3b's replay chain.
+- Calls the labeling skill for each cluster's `representative_quotes`
+- Writes `l3b_labeled_clusters.jsonl` (+ standard sidecar, with its own non-empty `skill_hashes`)
+- Leaves the L3 artifact untouched — ADR-011 immutability invariant is preserved
+
+The "L3b" name is chosen over "L4" (would cascade-renumber L4–L10) or "L3.5" (violates integer layer convention). `cluster_id` is stable across L3 and L3b; only the `label` field is rewritten.
 
 ### 4.5 Layer 4 — audit verdicts (uniform contract, P3; severity anchors per ADR-008)
 
@@ -651,7 +674,7 @@ Per concept §7 (future directions) and general hackathon scope:
 |---|---|
 | §4 Layer 1 classification | §3 `l1_classify.py`, §4.2 schema |
 | §5 Layer 2 structure-of-complaint | §3 `l2_structure.py`, §4.3 schema, §6 skill |
-| §6 Layer 3 aggregation | §3 `l3_cluster.py`, §4.4 schema, §3 `embedders/` |
+| §6 Layer 3 aggregation | §3 `l3_cluster.py` + `l3b_label.py`, §4.4 schema and label lifecycle, §3 `embedders/` |
 | §7 Layer 4 six canonical audits | §3 `l4_audit.py`, §4.5 schema, §6 skill directory |
 | §8 Layer 5 SOT reconciliation | §3 `l5_reconcile.py`, §4.6, §6 `sot-reconcile` |
 | §9 Layer 6 business weighting | §3 `l6_weight.py`, §4.7, §8.2 `MetaWeightsPanel` |
