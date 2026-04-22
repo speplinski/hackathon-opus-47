@@ -125,6 +125,13 @@ def encode(
     import sentence_transformers
     import torch
 
+    # Seed the process-global RNGs, not scoped generators.
+    # SentenceTransformer's internals (dropout init paths, pooling tie-
+    # breaks) read from the global ``random`` / ``numpy`` / ``torch``
+    # states, so a scoped ``np.random.default_rng`` here would be
+    # theatre — the determinism we document only holds with global
+    # seeding. Callers that need a clean global RNG afterwards should
+    # re-seed themselves.
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)

@@ -90,6 +90,13 @@ class TestEncodeRealModel:
 class TestProvenanceDict:
     """Every key the L3 meta-sidecar is expected to record."""
 
+    # Minimum contract, not exhaustive: the encoder may grow additional
+    # provenance keys over time (e.g. tokenizer_version) without breaking
+    # downstream readers that only look for this subset. Tests below use
+    # ``<=`` (subset) rather than ``==`` (equality) to preserve that
+    # additive-compatible property. If you want to force the encoder to
+    # declare every new key at the test level, flip those assertions to
+    # set-equality and update this frozenset on every addition.
     REQUIRED_KEYS: frozenset[str] = frozenset(
         {
             "model_name",
@@ -110,22 +117,40 @@ class TestProvenanceDict:
         _embeddings, provenance = encode(["hello"], seed=0)
         assert self.REQUIRED_KEYS <= set(provenance.keys())
 
-    def test_value_types_and_sentinels(self) -> None:
+    def test_provenance_value_types(self) -> None:
+        # Types only — see ``test_provenance_sentinel_values`` for the
+        # specific values. Split out so a failing type assertion and a
+        # failing sentinel-value assertion produce distinct, crisp
+        # failure messages instead of one opaque flat block.
         _embeddings, provenance = encode(["hello"], seed=0)
         assert isinstance(provenance["model_name"], str)
-        assert provenance["model_name"] == DEFAULT_MODEL
         assert isinstance(provenance["model_weights_hash"], str)
-        assert len(provenance["model_weights_hash"]) == 16
         assert isinstance(provenance["embedding_dim"], int)
-        assert provenance["embedding_dim"] == 384
-        assert provenance["normalize_embeddings"] is True
-        assert provenance["seed"] == 0
-        assert provenance["device"] == "cpu"
+        assert isinstance(provenance["normalize_embeddings"], bool)
+        assert isinstance(provenance["seed"], int)
+        assert isinstance(provenance["device"], str)
         assert isinstance(provenance["torch_version"], str)
         assert isinstance(provenance["sentence_transformers_version"], str)
         assert isinstance(provenance["numpy_version"], str)
         assert isinstance(provenance["python_version"], str)
         assert isinstance(provenance["platform"], str)
+
+    def test_provenance_sentinel_values(self) -> None:
+        # The specific values that reviewers rely on when diffing
+        # meta-sidecars between runs. A change to any of these is
+        # load-bearing on ADR-011 replay semantics.
+        _embeddings, provenance = encode(["hello"], seed=0)
+        assert provenance["model_name"] == DEFAULT_MODEL
+        assert len(provenance["model_weights_hash"]) == 16
+        assert provenance["embedding_dim"] == 384
+        assert provenance["normalize_embeddings"] is True
+        assert provenance["seed"] == 0
+        # Literal ``"cpu"`` on purpose — this is an audit-trail assertion
+        # that the constructor pin (``device="cpu"``) was honoured, not
+        # a reflection of ``model.device``. If someone ever removes the
+        # pin and lets torch auto-select, the constant "cpu" here makes
+        # the drift diagnosable instead of quietly recording "cuda:0".
+        assert provenance["device"] == "cpu"
 
     def test_model_weights_hash_stable(self) -> None:
         # Called twice in the same process — reloading the same

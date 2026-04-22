@@ -226,6 +226,8 @@ def cluster_hdbscan(
     gives the same cluster structure as ``metric="cosine"`` would — and
     HDBSCAN's Euclidean path is more battle-tested.
     """
+    import importlib.metadata
+
     import hdbscan
 
     clusterer = hdbscan.HDBSCAN(
@@ -235,12 +237,17 @@ def cluster_hdbscan(
         prediction_data=False,
     )
     labels = clusterer.fit_predict(embeddings.astype(np.float64))
+    # ``hdbscan`` doesn't expose ``__version__`` on the module object
+    # (unlike sklearn/torch/numpy), so we reach for the distribution
+    # metadata instead. Using ``importlib.metadata`` keeps the same
+    # "captured in provenance" story without a fragile ``getattr`` with
+    # a silent fallback that would mask an unexpected environment.
     provenance: dict[str, Any] = {
         "algorithm": "hdbscan",
         "min_cluster_size": min_cluster_size,
         "metric": "euclidean",
         "cluster_selection_method": "eom",
-        "hdbscan_version": hdbscan.__version__,
+        "hdbscan_version": importlib.metadata.version("hdbscan"),
     }
     return labels.astype(np.int64), provenance
 
