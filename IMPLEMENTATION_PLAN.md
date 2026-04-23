@@ -1,20 +1,23 @@
 # Auditable Design — Implementation Plan
 
-**Day-by-day plan for the 21–26 April 2026 hackathon window.**
+**Day-by-day plan for the 21–27 April 2026 hackathon window.**
 
 **Author:** Szymon P. Pepliński
 **Companion documents:** `concept.md` (source of truth), `ARCHITECTURE.md` (how layers compose)
-**Submission deadline:** Monday 27 April 2026, 02:00 CEST (= Sun 26 Apr 20:00 EDT).
+**Event window:** Tue 21 Apr 18:00 CEST → Mon 27 Apr 02:00 CEST (= Tue 21 Apr 12:00 EDT → Sun 26 Apr 20:00 EDT). Total: **128 hours** (5 days, 8 hours).
+**Submission deadline:** Mon 27 Apr 2026, 02:00 CEST (end of window — submission must land before the clock turns).
+
+The window is asymmetric: **Day 1** is a 6-hour evening (Tue 21 Apr 18:00–24:00 CEST) and **Day 7** is a 2-hour morning (Mon 27 Apr 00:00–02:00 CEST). Days 2–6 are full calendar days. Plan deliverables accordingly — do not schedule a full-day workload onto Day 1.
 
 ---
 
 ## 0. Ground rules
 
-**GR1 — Spine first, width later.** End of Day 2: a thin end-to-end path exists (10 reviews → 1 cluster → 1 verdict → 1 decision → 1 iteration). Days 3–5 widen the spine. No layer is built "fully" before the next one is stubbed.
+**GR1 — Spine first, width later.** End of Day 3: a thin end-to-end path exists (10 reviews → 1 cluster → 1 verdict → 1 decision → 1 iteration). Days 4–6 widen the spine. No layer is built "fully" before the next one is stubbed.
 
 **GR2 — Checkpoint, not guesswork.** Each day ends with an explicit yes/no on the daily checkpoint. If the checkpoint fails, the next day starts with the corresponding fallback from concept §15, not with "more effort on the same thing."
 
-**GR3 — Saturday is fallback day, not fix day.** Concept §15 hard rule. Any new feature proposed on Saturday is rejected unless it directly closes a gap already surfaced earlier in the week.
+**GR3 — Sunday is fallback day, not fix day.** Concept §15 hard rule. The day immediately before submission (Sun 26 Apr, given the Mon 27 Apr 02:00 CEST deadline) is reserved for closing gaps surfaced earlier in the week. Any new feature proposed on Sunday is rejected unless it directly closes such a gap.
 
 **GR4 — The cache is sacred.** `data/cache/` is committed frequently. Burning Claude budget on re-runs of already-answered prompts is the #1 avoidable waste.
 
@@ -22,38 +25,39 @@
 
 ---
 
-## 1. Pre-flight (Day 1 morning, 21 April)
+## 1. Pre-flight (before Tue 21 Apr 18:00 CEST kickoff)
 
-Before coding: the "items 2–4" from concept §19 need to exist as files on disk.
+Methodological grounding — not tracked code. These are pre-kickoff artefacts the methodology relies on (per concept §0: "prior methodological experience serves as benchmarking reference and methodological grounding"). Every *code* commit lands inside the 128-hour window; the documents below can predate kickoff and are referenced as input, not as in-window work.
 
-**Deliverables (before 13:00):**
+**Pre-kickoff deliverables (ready before 18:00 CEST Tue 21 Apr):**
 
-- `ARCHITECTURE.md` — done (this companion doc).
-- `CONTEXT_DUOLINGO.md` — ~500 words, public context with footnotes. Five sources minimum: Duolingo's AI-first announcement and backlash coverage, freemium KPIs reporting, public teardown of the current paywall, Google Play review distribution snapshot, European Accessibility Act reference (for the §7 accessibility framing).
-- Repo skeleton — `pyproject.toml`, `package.json`, directory tree per ARCHITECTURE §3, `.gitignore` for `data/cache/` (reversed at submission per ARCHITECTURE §10), empty `__init__.py` files, stub `pipeline.py` that prints the DAG.
+- `concept.md` — source of truth (this doc's companion).
+- `ARCHITECTURE.md` — 15 ADRs + layer composition.
+- `CONTEXT_DUOLINGO.md` — ~500 words, public context with footnotes. Five sources minimum: Duolingo's AI-first announcement and backlash coverage, freemium KPIs reporting, public teardown of the current paywall, Google Play review distribution snapshot, European Accessibility Act reference (for concept §7 accessibility framing).
+- Tool-stack decision: Python 3.11 + `uv`, Anthropic SDK, `pydantic`, `sentence-transformers`, `hdbscan`, `numpy`, `scikit-learn`; Vite + React + Tailwind + shadcn/ui for `demo/`; D3 for visualisations. No code yet — just the stack committed to in writing.
 
-**Tool setup (parallel, afternoon):**
-
-- `uv` environment with Python 3.11
-- Anthropic SDK, `pydantic`, `sentence-transformers`, `hdbscan`, `numpy`, `scikit-learn`
-- Vite + React + Tailwind + shadcn/ui scaffold in `demo/`
-- D3 installed
-- `.env` with API key, never committed
-
-**Day 1 checkpoint:** skeleton compiles and `python -m src.pipeline --dry-run` prints the ten layer names. Demo SPA renders "Hello, Auditable Design." Corpus file placeholder exists (actual collection starts now in parallel).
+**Kickoff readiness check (Tue 18:00 CEST):** three docs above exist; API key available locally (never committed); empty `hackathon-opus-47/` repo initialised but no code. First `git commit` inside the window happens *after* 18:00 CEST.
 
 ---
 
-## 2. Day 1 — Tuesday 21 April — Foundation
+## 2. Day 1 — Tue 21 Apr 18:00–24:00 CEST (kickoff evening, 6 h) — Foundation
 
-**Deliverables:** `ARCHITECTURE.md` with 15 ADRs, `CONTEXT_DUOLINGO.md`, repo scaffold
-(`pyproject.toml`, `uv.lock`, directory tree), `src/auditable_design/storage.py`
-(atomic writes + sidecar hash + perimeter check), `src/auditable_design/prompt_builder.py`
-(three-layer injection defense), `src/auditable_design/schemas.py` (Pydantic models for
-all 10 layers), CI (Pages workflow, Dependabot, pre-commit with gitleaks, relock workflow),
-test suite green.
+Day 1 is intentionally narrow because the window only opens 18:00 CEST. The Day-1 deliverables below are the maximum that realistically fits a 6-hour block starting from an empty repo; anything that slips rolls forward to Day 2 (Wednesday), which has a full calendar day available.
 
-**Commit checkpoint:** `feat: scaffold + storage/prompt/schemas with tests`.
+**Target deliverables (by Tue 24:00 CEST):**
+
+- Repo scaffold — `pyproject.toml`, `uv.lock`, `package.json`, directory tree per ARCHITECTURE §3, `.gitignore` for `data/cache/` (reversed at submission per ARCHITECTURE §10), empty `__init__.py` files, stub `pipeline.py` that prints the DAG.
+- `src/auditable_design/storage.py` — atomic writes + sidecar hash + perimeter check.
+- `src/auditable_design/schemas.py` — Pydantic models for all 10 layers.
+- `uv` environment synced; Vite + React + Tailwind + shadcn/ui scaffold in `demo/` renders "Hello, Auditable Design."
+- Test suite green; `python -m auditable_design.pipeline --dry-run` prints the ten layer names.
+- First tagged commit inside the window (`kickoff`).
+
+**Rollover to Day 2 if time runs out:** `src/auditable_design/prompt_builder.py` (three-layer injection defense), CI (Pages workflow, Dependabot, pre-commit with gitleaks, relock workflow). These can land on Wednesday morning without blocking L1/L2 work.
+
+**Day 1 checkpoint (Tue 24:00 CEST):** scaffold compiles, dry-run DAG prints, demo SPA loads. If scaffold does not compile by midnight, Day 2 opens with scaffold debug, not with `claude_client.py`.
+
+**Commit checkpoint:** `feat: scaffold + storage/schemas with tests` (tagged `kickoff` so window-start is visible in git history).
 
 ---
 
@@ -124,13 +128,13 @@ plus L3 clustering and spine stubs for L4/L7/L8. End Thursday with
 ### Evening — Day 3 checkpoint
 
 - **Checkpoint:** `python -m src.pipeline --run thin-spine` produces one decision + one iteration, fully traced back to specific reviews. Artifacts present under `data/derived/` and `data/log/`.
-- This is GR1. If the checkpoint fails, the next day does not start new work until the spine exists — Saturday is not a rescue for a missing spine.
+- This is GR1. If the checkpoint fails, the next day does not start new work until the spine exists — Sunday is not a rescue for a missing spine.
 
 **Commit target:** `feat: thin end-to-end spine on 50-review subset`.
 
 ---
 
-## 4. Day 3 — Thursday 23 April — Width: six skills, reconciliation, weighting
+## 5. Day 4 — Friday 24 April — Width: six skills, reconciliation, weighting
 
 **Goals:** L4 runs six canonical audits in parallel; L5 reconciles; L6 weights. First full-corpus end-to-end run. This is the concept §15 decision checkpoint day.
 
@@ -151,7 +155,7 @@ plus L3 clustering and spine stubs for L4/L7/L8. End Thursday with
 
 - Run the full pipeline L1–L7 on the full corpus. This is the moment cache design pays off.
 - Inspect clusters, ranked violations, decisions.
-- **Decision checkpoint (concept §15):** Is the system producing coherent, traceable insights on real data? If yes → proceed to L8 optimization on Day 4. If no → triage: re-prompt L4/L5/L6, adjust rubrics, do not touch L1–L3 unless clearly broken.
+- **Decision checkpoint (concept §15):** Is the system producing coherent, traceable insights on real data? If yes → proceed to the L8 evening block below. If no → triage: re-prompt L4/L5/L6, adjust rubrics, do not touch L1–L3 unless clearly broken.
 
 ### Evening (20:00–23:00) — L8 polish
 
@@ -162,7 +166,7 @@ plus L3 clustering and spine stubs for L4/L7/L8. End Thursday with
 
 ---
 
-## 5. Day 4 — Friday 24 April — Demo integration
+## 6. Day 5 — Saturday 25 April — Demo integration
 
 **Goals:** Evolution graph views, baseline comparison, meta-weights panel. Pipeline stops being touched unless bugs surface.
 
@@ -185,7 +189,7 @@ plus L3 clustering and spine stubs for L4/L7/L8. End Thursday with
 - `src/layers/l9_render.py` — pareto-optimal iteration from the log, render spec JSON + HTML/React prototype + rationale bundle. Graceful fallback: if HTML generation fails, emit wireframe SVG + spec.
 - Manual spot-check (concept §11 anti-gaming): does the final paywall redesign visibly address the original complaints?
 
-### Evening (20:00–23:00) — Day 4 checkpoint
+### Evening (20:00–23:00) — Day 5 checkpoint
 
 - **Checkpoint:** end-to-end demo is walkable. Open `demo/`, click through Timeline → iteration → reviews → rationale. Compare view shows B1/B2/B3. Meta-weights slider re-ranks clusters.
 - **Fallback triggers:** if D3 is misbehaving → static SVGs rendered by pipeline (concept §15 item 3). If HTML prototype is unreliable → wireframe SVG (item 4). If a baseline slipped → show B1 vs B3 only (item 5).
@@ -194,7 +198,7 @@ plus L3 clustering and spine stubs for L4/L7/L8. End Thursday with
 
 ---
 
-## 6. Day 5 — Saturday 25 April — Polish, deploy, harden (FALLBACK DAY, GR3)
+## 7. Day 6 — Sunday 26 April — Polish, deploy, harden (FALLBACK DAY, GR3)
 
 **Goals:** pitch artifacts, GitHub Pages deploy, security hardening, backup video. Explicitly no new pipeline features.
 
@@ -234,11 +238,11 @@ Run the findings table end-to-end and confirm each is closed:
 - Walk the demo with fresh eyes. One strong demo moment (concept §18): timeline view with a clear "watch the design improve itself through audit."
 - If any deliverable is still missing at 23:00: stop, cut it, and document the cut openly in `README.md` under "Known scope reductions." Honest framing (concept §15) is a non-negotiable.
 
-**Do not add features after 23:00 Saturday.**
+**Do not add features after 23:00 Sunday.**
 
 ---
 
-## 7. Day 6 — Sunday 26 April — Submission
+## 8. Day 7 — Monday 27 April 00:00–02:00 — Submission
 
 ### 00:00–01:30 — Final verification
 
@@ -256,24 +260,25 @@ Run the findings table end-to-end and confirm each is closed:
 
 ---
 
-## 8. Task dependency graph (abbreviated)
+## 9. Task dependency graph (abbreviated)
 
 ```
-Day 1: [pre-flight] → [corpus] → [L1]
-Day 2: [L2 skill] → [L2] → [L3] → [spine stubs L4/L7/L8]    ← GR1 checkpoint
-Day 3: [5 remaining audit skills] → [L4 real] → [sot-reconcile skill] → [L5] → [L6]
+Day 1: [scaffold] → [storage + prompt + schemas] → [CI/Pages/Dependabot]
+Day 2: [claude_client] → [corpus] → [L1]
+Day 3: [L2 skill] → [L2] → [L3] → [spine stubs L4/L7/L8]    ← GR1 checkpoint
+Day 4: [5 remaining audit skills] → [L4 real] → [sot-reconcile skill] → [L5] → [L6]
        → [first full run]                                    ← §15 decision checkpoint
        → [L8 on flagship cluster]
-Day 4: [L10 assembly] → [Timeline+Rationale] → [baselines] → [Compare+MetaWeights]
+Day 5: [L10 assembly] → [Timeline+Rationale] → [baselines] → [Compare+MetaWeights]
        → [L9 render] → [spot-check]
-Day 5: [README+writeup+pitch] → [backup video] → [cache commit] → [reviewer dry-run]
+Day 6: [README+writeup+pitch] → [backup video] → [cache commit] → [reviewer dry-run]
        → [polish + fresh-eyes walk]
-Day 6: [final verification] → [submit]
+Day 7: [final verification] → [submit]
 ```
 
 ---
 
-## 9. Risk-triggered fallback ladder (concept §15 encoded)
+## 10. Risk-triggered fallback ladder (concept §15 encoded)
 
 Executed in this exact order when time pressure bites. Each step is reversible until it is committed.
 
@@ -287,24 +292,25 @@ Executed in this exact order when time pressure bites. Each step is reversible u
 
 ---
 
-## 10. Tracking — one-line daily log
+## 11. Tracking — one-line daily log
 
 Add one line per day to `docs/daily_log.md`:
 
 ```
-2026-04-21  L1 done, corpus @ N reviews, split X%/Y%, spot-check PASS
-2026-04-22  L2+L3 done, thin spine green, 1 cluster → 1 decision → 1 iteration
-2026-04-23  6 skills active, first full run done, decision checkpoint: PASS
-2026-04-24  Demo walkable, baselines in place, Compare + MetaWeights live
-2026-04-25  README+writeup done, backup video recorded, dry-run green
-2026-04-26  Submitted at HH:MM
+2026-04-21  scaffold + CI green, storage/prompt/schemas tests pass
+2026-04-22  claude_client + L1 done, corpus @ N reviews, split X%/Y%, spot-check PASS
+2026-04-23  L2+L3 done, thin spine green, 1 cluster → 1 decision → 1 iteration
+2026-04-24  6 skills active, first full run done, decision checkpoint: PASS
+2026-04-25  Demo walkable, baselines in place, Compare + MetaWeights live
+2026-04-26  README+writeup done, backup video recorded, dry-run green
+2026-04-27  Submitted at HH:MM
 ```
 
 Terse. Honest. This is the journal the jury will not see but that keeps the work honest through the event window.
 
 ---
 
-## 11. What "done" looks like (concept §18 encoded)
+## 12. What "done" looks like (concept §18 encoded)
 
 **Must-have for submission (matches concept §18 must-deliver):**
 

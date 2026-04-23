@@ -4,14 +4,14 @@
 
 **Project concept — Built with Opus 4.7 Hackathon**
 **Author:** Szymon P. Pepliński
-**Event dates:** 21–26 April 2026
+**Event window:** Tue 21 Apr 2026, 18:00 CEST → Mon 27 Apr 2026, 02:00 CEST (= Tue 21 Apr, 12:00 EDT → Sun 26 Apr, 20:00 EDT). Total: 128 hours.
 **Status:** source of truth for implementation
 
 ---
 
 ## 0. Important context
 
-Everything in this system is built from zero during the hackathon. No pre-existing code is reused. The author has prior methodological experience with Claude Code skills, audit frameworks, and argument-graph analysis (SOT methodology) — this experience serves as **benchmarking reference and methodological grounding**, not as starting codebase. Every skill, every script, every UI component is committed during the 21–26 April window.
+Everything in this system is built from zero during the hackathon. No pre-existing code is reused. The author has prior methodological experience with Claude Code skills, audit frameworks, and argument-graph analysis (SOT methodology) — this experience serves as **benchmarking reference and methodological grounding**, not as starting codebase. Every skill, every script, every UI component is committed during the 128-hour event window (Tue 21 Apr 18:00 CEST → Mon 27 Apr 02:00 CEST).
 
 This matters for three reasons:
 - Submission represents full scope of what was built during the event
@@ -341,15 +341,17 @@ Traditional rationale graph for the *final* design — but now each node links b
 
 Every layer has defined success signals, identified failure modes, fallbacks, and graceful degradation paths. Detailed per-layer analysis is maintained in working documents.
 
-**Meta-operational strategy:**
+**Meta-operational strategy** (128-hour window is asymmetric: Day 1 is 6 h, Day 7 is 2 h, Days 2–6 are full calendar days):
 
-- **Days 1–2:** build layer by layer, each tested on 20-review sample before proceeding
-- **Day 3:** first end-to-end run, decision checkpoint
-- **Day 4:** demo integration (UI, interactivity, baseline comparison, evolution graph)
-- **Day 5:** polish, demo script, backup video, final submission artifacts
-- **Sunday 02:00 Polish time:** submit
+- **Day 1** (Tue 21 Apr, 18:00–24:00 CEST, 6 h): kickoff — repo scaffold + schemas + storage
+- **Day 2** (Wed): claude_client + corpus scraping + L1 classification
+- **Day 3** (Thu): thin end-to-end spine (first decision + first iteration traceable back to reviews)
+- **Day 4** (Fri): width — six audit skills, reconciliation, weighting, first full-corpus run (§15 decision checkpoint)
+- **Day 5** (Sat): demo integration (UI, interactivity, baseline comparison, evolution graph)
+- **Day 6** (Sun): polish, demo script, backup video, final submission artefacts (fallback day)
+- **Day 7** (Mon 27 Apr, 00:00–02:00 CEST, 2 h): final verification + submit
 
-**Hard rule:** Saturday is fallback day, not fix day. A working 7-layer system beats a broken 10-layer system.
+**Hard rule:** Sunday (the day immediately before the Monday 02:00 CEST deadline) is fallback day, not fix day. A working 7-layer system beats a broken 10-layer system.
 
 **Fallback priority (cuts under pressure, from least to most critical):**
 1. Cooper + Garrett canonical skills (reduce to 4 backbone skills: Norman, Kahneman, Osterwalder, Accessibility)
