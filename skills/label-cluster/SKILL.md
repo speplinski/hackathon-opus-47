@@ -40,15 +40,29 @@ Bad labels are vague or aspirational:
 - `"Bad UX"` — every cluster is "bad UX"; conveys nothing.
 - `"Users are unhappy"` — meta, not a theme.
 
+**Forbidden label shapes**
+
+The following patterns are never acceptable outputs. If a cluster pulls you toward one of them, emit `"Mixed complaints"` instead — the sentinel is specifically designed to cover this case.
+
+- `"General X"` / `"Generic X"` — e.g. `"General frustration"`, `"Generic negative sentiment"`, `"General annoyance"`, `"General dissatisfaction"`, `"Generic complaints"`. These name an affect but no triggered element; they tell a product owner nothing about which part of the app to look at.
+- `"X without specific cause"` / `"Unspecified X"` — e.g. `"Negative feedback without specific cause"`, `"Unspecified complaints"`. Same failure: the label confesses it cannot point at anything.
+- Pure emotion words — `"Frustration"`, `"Anger"`, `"Disappointment"` as the entire label. A feeling is not a theme.
+- Catch-all umbrellas — `"User complaints"`, `"Negative reviews"`, `"Bad experience"`. True by definition of the corpus; contributes no signal.
+
+These shapes look like labels but are failure modes: they paraphrase the affect in the quotes rather than name the element that triggered it. Downstream audits cannot use them — they cannot be merged, deduplicated, or routed to an owner. `"Mixed complaints"` is the correct answer when the quotes share a feeling but no concrete trigger.
+
 **Thin or incoherent clusters**
 
-If the quotes do not share a coherent theme — e.g. one is about voice recognition, one is about billing, one is about login — do not invent a synthetic umbrella. Emit:
+Emit `"Mixed complaints"` whenever either of these holds:
+
+1. **Heterogeneous triggers.** The quotes point at unrelated elements — e.g. one is about voice recognition, one is about billing, one is about login. Do not invent a synthetic umbrella.
+2. **Affect-only cluster.** All quotes express the same feeling (frustration, regret, disappointment) but no shared triggered element — e.g. `"so annoying"`, `"worst app ever"`, `"hate it now"`, `"useless"`. This looks tempting to label as `"General frustration"` — do not. An affect without an anchored trigger is exactly what the sentinel is for.
 
 ```json
 {"label": "Mixed complaints"}
 ```
 
-This is a known-unknown signal; downstream cluster-coherence audits (L4) expect it and will flag the cluster for review. Padding a label to hide incoherence poisons the audit trail.
+This is a known-unknown signal; downstream cluster-coherence audits (L4) expect it and will flag the cluster for review. Padding a label to hide incoherence — or dressing up an affect-only cluster as `"General X"` — poisons the audit trail.
 
 **Worked examples**
 
@@ -110,7 +124,7 @@ Output:
 
 ---
 
-Input (incoherent):
+Input (incoherent — heterogeneous triggers):
 
 ```xml
 <cluster_quotes>
@@ -125,3 +139,25 @@ Output:
 ```json
 {"label": "Mixed complaints"}
 ```
+
+---
+
+Input (affect-only — shared feeling, no shared trigger):
+
+```xml
+<cluster_quotes>
+  <q>so annoying</q>
+  <q>worst app ever</q>
+  <q>hate this now</q>
+  <q>absolutely useless</q>
+  <q>frustrating</q>
+</cluster_quotes>
+```
+
+Output:
+
+```json
+{"label": "Mixed complaints"}
+```
+
+Not `"General frustration"`. Not `"Generic negative sentiment"`. The quotes share an affect but name no element — that is exactly the sentinel's job.
