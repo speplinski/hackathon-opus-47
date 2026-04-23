@@ -51,6 +51,12 @@ dev = [
     "mypy>=1.10,<2.0",
     "types-pyyaml>=6.0,<7.0",
     "pre-commit>=3.7,<5.0",
+    # Used one-off to render adversarial UI mockups (HTML → PNG) for the
+    # L4 audit-decision-psychology matched eval. Not a runtime dep; only
+    # needed if you want to regenerate `data/artifacts/ui/*.png` from
+    # the corresponding HTML file. Browser install is separate:
+    # `uv run playwright install chromium`.
+    "playwright>=1.58.0",
     # NOTE: gitleaks is a Go binary, not a Python package. Installed via
     # the pre-commit hook (`.pre-commit-config.yaml`) and via the
     # `gitleaks/gitleaks-action@v2` step in `.github/workflows/pages.yml`.
