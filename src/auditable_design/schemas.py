@@ -259,6 +259,20 @@ class InsightCluster(_StrictModel):
         ),
     )
     representative_quotes: list[str] = Field(..., min_length=1, max_length=5)
+    ui_context: str | None = Field(
+        default=None,
+        description=(
+            "Optional short description of the UI surface the cluster concerns "
+            "(e.g. 'paywall modal after lesson 3', 'streak-recovery screen'). "
+            "When present, L4 audit skills use it as primary UI scaffold "
+            "alongside quotes; when absent, skills reason from quotes alone. "
+            "Per concept §7, audit input is 'UI description + user voice' — "
+            "this field makes that explicit while keeping L3b output back-"
+            "compatible (absent field parses as None). Prompt builders MUST "
+            "omit the UI-context tag entirely when this is None so existing "
+            "replay-cache entries remain valid."
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------

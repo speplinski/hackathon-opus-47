@@ -237,6 +237,11 @@ def build_user_message(cluster: InsightCluster) -> str:
     must use in ``evidence_quote_idxs``. Keeping these explicit in the
     prompt prevents the model from inferring indices from position and
     drifting off-by-one.
+
+    ``ui_context`` is rendered as an optional ``<ui_context>`` tag
+    **only when present** — when ``None`` the prompt is byte-identical
+    to the legacy shape, which keeps pre-existing replay-cache entries
+    valid (their ``key_hash`` was computed over the tag-free prompt).
     """
     escape = str.maketrans({"&": "&amp;", "<": "&lt;", ">": "&gt;"})
 
@@ -245,9 +250,20 @@ def build_user_message(cluster: InsightCluster) -> str:
         f'  <q idx="{i}">{q.translate(escape)}</q>'
         for i, q in enumerate(cluster.representative_quotes)
     )
+    if cluster.ui_context is None:
+        # Legacy shape — byte-identical to pre-ui_context prompts so the
+        # replay cache for the thin-spine smoke stays hot.
+        return (
+            f"<cluster>\n"
+            f"  <label>{label_escaped}</label>\n"
+            f"{quotes_inner}\n"
+            f"</cluster>"
+        )
+    ui_context_escaped = cluster.ui_context.translate(escape)
     return (
         f"<cluster>\n"
         f"  <label>{label_escaped}</label>\n"
+        f"  <ui_context>{ui_context_escaped}</ui_context>\n"
         f"{quotes_inner}\n"
         f"</cluster>"
     )

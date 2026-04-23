@@ -167,6 +167,8 @@ Opus 4.7's 7320 input tokens vs the 5270 reported by the other two is a provider
 
 L4 is a Claude API layer; reproducible via the ADR-011 replay log rather than by re-running live. The three replay cache entries are keyed on `(skill_id="audit-usability-fundamentals", skill_hash="3a26404c…", model, temperature=0.0, max_tokens=4096, system=SYSTEM_PROMPT, user=<build_user_message(cluster_01)>)`.
 
+> **Skill version pin.** The `skill_hash` `3a26404c…` above pins to the pre-`ui_context` version of SKILL.md — i.e. the SKILL.md as shipped in commit `afe89af` (the commit that authored this eval). Concept §7 was subsequently clarified to require `ui_context` as part of the input contract, and SKILL.md was extended with an *"Optional UI context"* section. That rewrite changes `skill_hash` to `4808a678…`, which means a replay from HEAD SKILL.md is cache-miss → fails closed in `--mode replay`. To reproduce byte-identical: `git show afe89af:skills/audit-usability-fundamentals/SKILL.md` and run against that pinned SKILL.md. The present three-way cluster_01 smoke remains the thin-spine-contract record for the pre-extension skill; any future cluster_01 re-run with the extended skill will be recorded separately.
+
 Regenerate in replay mode from tracked inputs:
 
 ```bash

@@ -113,7 +113,7 @@ Layer 10 is **narrative artifact** (demo-facing visualization of the entire proc
 
 **The six perspectives:**
 
-- **`audit-usability-fundamentals`** — Norman's ten usability heuristics (visibility of system status, match to real world, user control, consistency, error prevention, recognition over recall, flexibility, aesthetic minimalism, error recovery, help documentation)
+- **`audit-usability-fundamentals`** — Don Norman's conceptual framework (*The Design of Everyday Things*, 2013): affordances, signifiers, mapping, feedback, conceptual model, Gulf of Execution / Gulf of Evaluation, slip vs. mistake taxonomy, forcing functions, featuritis, inclusion — organised into four audit dimensions (Interaction Fundamentals, Action & Cognition, Error Architecture, System Maturity). Nielsen's 10 Usability Heuristics are covered implicitly within this broader frame and referenced where relevant.
 - **`audit-interaction-design`** — Cooper's interaction patterns (posture, idiomatic controls, flow, excise elimination, personas)
 - **`audit-ux-architecture`** — Garrett's five planes (strategy, scope, structure, skeleton, surface) and inter-plane coherence
 - **`audit-decision-psychology`** — Kahneman's cognitive frameworks (cognitive load, choice architecture, loss aversion, framing effects, dual systems)
