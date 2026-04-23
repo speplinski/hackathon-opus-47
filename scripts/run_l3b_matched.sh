@@ -13,10 +13,13 @@
 #   opus47 input   →  claude-opus-4-7   (L2 default in layers/l2_structure.py)
 #   sonnet46 input →  claude-sonnet-4-6
 #
-# Outputs are written to a sibling `matched/` subdirectory so the Haiku
-# baseline artefacts at data/derived/l3b_labeled_clusters/*.jsonl are left
-# untouched — both sets coexist for the matched-vs-shared comparison in a
-# follow-up eval doc.
+# Outputs are written to a sibling `matched_rubric_v1/` subdirectory so the
+# Haiku baseline artefacts at data/derived/l3b_labeled_clusters/*.jsonl are
+# left untouched — both sets coexist for the matched-vs-shared comparison in
+# the companion eval doc. The `_rubric_v1` suffix reflects that this run uses
+# the original `label-cluster` SKILL.md; a later rubric v2 run of the same
+# three labellers writes to `matched_rubric_v2/` via
+# `scripts/run_l3b_matched_rubric_v2.sh`.
 #
 # Mode is `live`: the replay cache only contains Haiku entries for these
 # three inputs. Cache keys include the model id, so new Opus/Sonnet calls
@@ -53,7 +56,7 @@ if [[ ! -d "src/auditable_design" ]]; then
 fi
 
 L3_DIR="data/derived/l3_clusters"
-OUT_DIR="data/derived/l3b_labeled_clusters/matched"
+OUT_DIR="data/derived/l3b_labeled_clusters/matched_rubric_v1"
 mkdir -p "$OUT_DIR"
 
 run_matched() {

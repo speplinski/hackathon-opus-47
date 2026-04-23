@@ -111,9 +111,17 @@ LAYER_NAME: str = "l3b_label"
 MODEL: str = "claude-haiku-4-5-20251001"
 TEMPERATURE: float = 0.0
 # Response is a one-line JSON object: ``{"label": "<≤60 chars>"}``.
-# 128 tokens covers the worst case with room for the label reaching the
-# upper bound without ever truncating the closing ``"}``.
-MAX_TOKENS: int = 128
+# 128 tokens covers the JSON payload itself with room to spare, but
+# Opus 4.6 on rubric v2 sometimes writes a short reasoning preamble
+# *before* the JSON and then gets truncated mid-thought at the ceiling
+# — observed 2/14 UNLABELED fallbacks on the full-corpus matched run,
+# both with ``output_tokens == 128`` (ceiling hit, no ``{...}`` ever
+# emitted). 512 leaves headroom for ~400 tokens of preamble + the JSON,
+# at marginal cost: Claude bills only on actually-emitted tokens, so
+# the budget increase is free for the 12/14 non-reasoning cases and
+# costs ~$0.02 on the 2/14 reasoning cases (Opus 4.6 output = $75/Mtok
+# nominal, actual ~$25/Mtok per the tracker-overestimate calibration).
+MAX_TOKENS: int = 512
 
 # Label length bounds enforced after parse. Upper bound mirrors the
 # SKILL.md contract (60 chars); the layer is the last line of defence

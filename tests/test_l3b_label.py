@@ -204,10 +204,14 @@ class TestConstants:
         assert TEMPERATURE == 0.0
 
     def test_max_tokens_fits_response(self) -> None:
-        # 128 is the minimal safe bound; one JSON record with a
-        # 60-char label sits well under this. If someone bumps
-        # LABEL_MAX_LEN, they must revisit this bound too.
-        assert MAX_TOKENS == 128
+        # 512 was chosen to give Opus 4.6 room for a short reasoning
+        # preamble BEFORE the JSON — rubric v2 showed it occasionally
+        # hits 128 mid-thought without ever emitting ``{...}``, which
+        # causes UNLABELED fallbacks. If someone bumps LABEL_MAX_LEN,
+        # they must revisit this bound too. Lowering back to 128 will
+        # re-introduce the Opus 4.6 parse-fail regression on reasoning-
+        # first clusters.
+        assert MAX_TOKENS == 512
 
     def test_default_paths(self) -> None:
         assert DEFAULT_CLUSTERS == Path("data/derived/l3_clusters.jsonl")

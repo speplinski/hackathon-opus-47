@@ -53,7 +53,7 @@ Identical to the Haiku baseline — three L3 cluster inventories:
 
 All three runs: `temperature=0.0`, `max_tokens=128`, mode `live`, same skill hash as the baseline (`8f6bffe52347796050792e1016355d969e950db5102f0bcafc89650e4e2cf10b`). Zero fallbacks, zero transport failures across 31 labels.
 
-Outputs at `data/derived/l3b_labeled_clusters/matched/l3b_labeled_clusters_full_{opus46,opus47,sonnet46}.jsonl`. The baseline artefacts at `data/derived/l3b_labeled_clusters/l3b_labeled_clusters_full_*.jsonl` are untouched — the two eval sets coexist on disk for the comparison tables below.
+Outputs at `data/derived/l3b_labeled_clusters/matched_rubric_v1/l3b_labeled_clusters_full_{opus46,opus47,sonnet46}.jsonl`. The baseline artefacts at `data/derived/l3b_labeled_clusters/l3b_labeled_clusters_full_*.jsonl` are untouched — the two eval sets coexist on disk for the comparison tables below. (The `_rubric_v1` suffix disambiguates this matched run from the later rubric v2 re-run at `matched_rubric_v2/`; both coexist on disk.)
 
 ### Cost calibration
 
@@ -197,7 +197,7 @@ For a deployment decision, this means:
 
 The *"Close the rubric gap"* follow-up in the original *What's next* section was executed. `skills/label-cluster/SKILL.md` was hardened with a new **Forbidden label shapes** section explicitly disallowing `"General X"` / `"Generic X"` / `"X without specific cause"` / pure-emotion shapes, plus a new **affect-only** clause in *Thin or incoherent clusters* routing those clusters toward `Mixed complaints`, plus a worked example showing an affect-only cluster resolving to `Mixed complaints` (with the counterexample *"Not 'General frustration'. Not 'Generic negative sentiment'"* spelled out). The edit changes the SYSTEM_PROMPT body, which changes `skill_hash`, which invalidates all 31 cached matched entries — every call in the re-run is fresh.
 
-All three matched labellers were re-run under the hardened skill. Driver at `scripts/run_l3b_matched_rubric_v2.sh`, outputs at `data/derived/l3b_labeled_clusters/matched_rubric_v2/` (separate directory — the original `matched/` artefacts are untouched, both coexist). Cost: opus46 tracker $0.41 (+$0.00 on the second replay pass — cache stable), opus47 tracker $0.38, sonnet46 tracker $0.04. Real billing estimate ~$0.17 (Opus ÷3 + Sonnet 1:1).
+All three matched labellers were re-run under the hardened skill. Driver at `scripts/run_l3b_matched_rubric_v2.sh`, outputs at `data/derived/l3b_labeled_clusters/matched_rubric_v2/` (separate directory — the original `matched_rubric_v1/` artefacts are untouched, both coexist). Cost: opus46 tracker $0.41 (+$0.00 on the second replay pass — cache stable), opus47 tracker $0.38, sonnet46 tracker $0.04. Real billing estimate ~$0.17 (Opus ÷3 + Sonnet 1:1).
 
 ### Headline results
 
@@ -288,6 +288,61 @@ Skill hash change (concrete evidence of cache invalidation): `label-cluster` v1 
 
 Across 31 clusters and three labellers: **tier-3 violations 10/31 → 0/31**. The hardening achieves its stated goal with no regressions on themed-label accuracy (verified by Sonnet's byte-identical output and Opus 4.7's fix-only delta), plus one bonus confidence recovery (opus47 cluster_00). The only side-effect is a 14% fallback rate on Opus 4.6 specifically, which is preferable to false-positive affect paraphrases in a downstream-audit context and is plausibly closeable via the prefill mechanism in *What's next*.
 
+## Follow-up: closing the 2/14 Opus 4.6 fallback gap
+
+*What's next* proposed three fixes in leverage order: (a) prefill the assistant turn with `{"label": "` so JSON continuation is structurally forced, (b) move the output-contract line to the top of SKILL.md, (c) raise `max_tokens` from 128. The follow-up tried (a) first, discovered it is blocked at the model layer, and fell back to (c) with a root-cause reframe that upgrades the option from "regressive" to "correct".
+
+### Option (a): API-level block, not a near miss
+
+The prefill mechanism was plumbed end-to-end — `prefill` parameter added to `claude_client.Client.call()` and threaded through `_key_hash()`, `_dispatch()`, and the replay-log entry; l3b_label's call-site passed `prefill='{"label": "'`; `response_text` was reconstructed as `prefill + model_continuation` before JSON parse. A dry rerun against Opus 4.6 returned **400 on 14/14 calls** with message *"This model does not support assistant message prefill. The conversation must end with a user message."* This is a model-specific API restriction, not a transport bug — Anthropic returns the same error for Opus 4.6 regardless of how the assistant turn is constructed.
+
+The prefill plumbing was fully reverted from `claude_client.py` and `tests/test_claude_client.py` — the baseline is restored byte-for-byte, no dead code left behind. If Anthropic opens prefill on Opus 4.x in a future model revision, the diff is recoverable from git history; there is no ongoing reason to keep the plumbing half-built.
+
+### Root-cause reframe: budget ceiling, not reasoning drift
+
+The *Results → New failure mode* section above framed the 2/14 fallbacks as "Opus 4.6 pushed into a more deliberative mode by the hardened rubric, and the model's tendency to show its work overwhelmed the thin output-contract phrasing". Inspecting the two failing cache entries contradicts the first half of that framing. Both had `output_tokens == 128` — the budget ceiling hit, not a deliberate "reason first, then write JSON" completion. The model was mid-sentence when the sampler cut off, and no `{...}` was ever emitted. Sample (cluster_00 continuation, last tokens before truncation): *"…but point at different triggers: wasted learning progress, app decline, lesson duration, unmet expectations."* — this is a reasoning prologue, not a completed response. With 128 tokens of budget the model never had room for the JSON payload after the prologue.
+
+That reframes option (c) from "regressive — raises cost and only hides the drift" to "correct — the budget was the bottleneck, raise it". Billing is on actually-emitted tokens, so raising the ceiling is free on the 12/14 non-reasoning cases and costs only the incremental prologue tokens on the 2/14. And `MAX_TOKENS` is part of the cache `key_hash`, so a bump is a clean cache-invalidation event — no stale entries.
+
+### Fix: MAX_TOKENS 128 → 512
+
+One-line change in `src/auditable_design/layers/l3b_label.py` (`MAX_TOKENS: int = 512`) with a root-cause comment, plus a matching assertion update in `tests/test_l3b_label.py`. 512 leaves headroom for ~400 tokens of preamble plus the short JSON payload; a JSON object of shape `{"label": "<≤60 chars>"}` is well under 50 tokens, so the rest is pure budget for the model's own style.
+
+`skill_hash` unchanged (`df9289ee5645bbb4cf6eb5c2131a7dc3711ec9e9a6a7b710d1ac5394a409780e`) — the skill text was not touched. The `max_tokens=512` change alone invalidates all 31 matched_rubric_v2 cache entries.
+
+### Measurement (all three labellers re-run under rubric v2 + MAX_TOKENS=512)
+
+| Labeller | labeled | mixed | fallback | tracker spend |
+|---|---|---|---|---|
+| Opus 4.6 | 14 | 7 | **0** (was 2) | $0.4104 |
+| Opus 4.7 | 10 | 6 | 0 (unchanged) | $0.3832 |
+| Sonnet 4.6 | 7 | 4 | 0 (unchanged) | $0.0385 |
+| **Total** | **31** | **17** | **0** (was 2) | **$0.8321** |
+
+Expected real billing ~$0.28 after Opus ÷3 + Sonnet 1:1 calibration. Zero transport failures across 31 calls.
+
+**Per-labeller deltas, cluster by cluster:**
+
+*opus46 (the target of the fix).* Both previous UNLABELED placeholders resolved to the rubric's intended sentinel — cluster_00 (bilingual ES/PT regret, heterogeneous triggers): `UNLABELED:cluster_00` → `Mixed complaints`. cluster_04 (language-learning span, reasoning-truncated): `UNLABELED:cluster_04` → `Mixed complaints`. Recall the sampled reasoning prologue from cluster_00: *"These share a feeling of frustration/disappointment but point at different triggers…"* — that prologue reached `Mixed` as its verdict, the budget just never let it write one. With 512 tokens the prologue + JSON both fit. The 12 clusters that already had labels under rubric v2 retained them verbatim. Mixed rose from 5 to 7 — exactly the 2 recovered UNLABELED placeholders. No other delta.
+
+*opus47 (no fallback either way — a control).* Headline counts identical to rubric v2 baseline: 6 Mixed, 4 themed. The only diff is at cluster_00: `Shift from free to paid model` → `Monetization of previously free features`. Same theme, different phrasing. `temperature=0.0` should make this deterministic, but Opus 4.7 drops caller-requested sampling params (`_omits_sampling_params`) and runs with model-default sampling; this wording flip is consistent with server-side sampling variance rather than any effect of the MAX_TOKENS change. 9/10 clusters are verbatim matches with the rubric v2 baseline.
+
+*sonnet46 (control).* Output artefact sha256 **byte-identical** to both earlier sonnet46 runs (matched baseline and rubric v2) — `6df4f702b4eef21d83b664ce9aa6983ca5b126a5aaee7d5c73caea93d8356640` across all three. Sonnet 4.6 is stable across all three skill/budget configurations; this is the null-effect control confirming the MAX_TOKENS bump is a surgical fix for Opus 4.6's budget truncation, not a regime change affecting other labellers.
+
+### Artefact hashes (rubric v2 + MAX_TOKENS=512)
+
+| File | item_count | sha256 |
+|---|---|---|
+| `matched_rubric_v2/l3b_labeled_clusters_full_opus46.jsonl` | 14 | `3c548c1530353a76c0b6f07014b3df557e6024ff0d64c5d9e2f715cc9ae58de9` |
+| `matched_rubric_v2/l3b_labeled_clusters_full_opus47.jsonl` | 10 | `e950bc5d2c3a03262ef00bd949b050c44a99719e47b293b7266532c8cffd7e59` |
+| `matched_rubric_v2/l3b_labeled_clusters_full_sonnet46.jsonl` | 7 | `6df4f702b4eef21d83b664ce9aa6983ca5b126a5aaee7d5c73caea93d8356640` |
+
+The opus46 and opus47 hashes **replace** the earlier rubric v2 hashes at the same path (the MAX_TOKENS=128 artefacts were overwritten on re-run). The sonnet46 hash is unchanged — byte-identical output for the third time in this eval, across three different skill/budget combinations. Driver script: `scripts/run_l3b_matched_rubric_v2.sh`.
+
+### Anti-fix note for future readers
+
+If a future iteration ever hits a "force JSON output by prefilling the assistant turn" impulse on Opus 4.x, the relevant prior-art is: (i) the mechanism is supported by the Anthropic API in general, (ii) Opus 4.6 specifically returns 400 on any request that ends with an assistant message, (iii) Opus 4.7 was not tested against this restriction in this follow-up (no fallbacks there, so no motivation). Don't spend time re-plumbing prefill for Opus 4.6 until an Anthropic model-card update lifts the restriction. The budget-bump fix is the right answer for this specific failure mode anyway — the 2/14 fallbacks were sampler truncation, not a genuine "model refuses to emit JSON" issue that would need a structural forcing function.
+
 ## Caveats
 
 - **Only one run per (input, labeller) pair.** Temperature is 0.0 so determinism should be close to perfect, but this is not a variance study — a single tie-break in Opus 4.6's sampler could flip one of the "Generic X" decisions. Budget for a second live run per pair before making any strong claim about per-labeller Mixed rates.
@@ -304,29 +359,29 @@ Driver script at `scripts/run_l3b_matched.sh`. Run from the repo root:
 bash scripts/run_l3b_matched.sh
 ```
 
-The script runs three live `uv run python -m auditable_design.layers.l3b_label` invocations with `--model` set to each pipeline's matched model and output paths under `data/derived/l3b_labeled_clusters/matched/`. Mode is live — the cache didn't contain Opus/Sonnet keys for these prompts when this eval was written; a re-run from a cold cache will replay once the responses are logged to `data/cache/responses.jsonl`.
+The script runs three live `uv run python -m auditable_design.layers.l3b_label` invocations with `--model` set to each pipeline's matched model and output paths under `data/derived/l3b_labeled_clusters/matched_rubric_v1/`. Mode is live — the cache didn't contain Opus/Sonnet keys for these prompts when this eval was written; a re-run from a cold cache will replay once the responses are logged to `data/cache/responses.jsonl`.
 
 Verify:
 
 ```bash
 sha256sum \
-  data/derived/l3b_labeled_clusters/matched/l3b_labeled_clusters_full_opus46.jsonl \
-  data/derived/l3b_labeled_clusters/matched/l3b_labeled_clusters_full_opus47.jsonl \
-  data/derived/l3b_labeled_clusters/matched/l3b_labeled_clusters_full_sonnet46.jsonl
+  data/derived/l3b_labeled_clusters/matched_rubric_v1/l3b_labeled_clusters_full_opus46.jsonl \
+  data/derived/l3b_labeled_clusters/matched_rubric_v1/l3b_labeled_clusters_full_opus47.jsonl \
+  data/derived/l3b_labeled_clusters/matched_rubric_v1/l3b_labeled_clusters_full_sonnet46.jsonl
 ```
 
 Expected:
 
 | File | sha256 |
 |---|---|
-| `matched/l3b_labeled_clusters_full_opus46.jsonl` | `614f3b48c24c9f9c89271356915adb10aa1b28287626962bceeea6181fe0695a` |
-| `matched/l3b_labeled_clusters_full_opus47.jsonl` | `c1ad65f0689cbf1e1d1c5935b15d6990fd3dae231f085321ca805eb6854d9d98` |
-| `matched/l3b_labeled_clusters_full_sonnet46.jsonl` | `6df4f702b4eef21d83b664ce9aa6983ca5b126a5aaee7d5c73caea93d8356640` |
+| `matched_rubric_v1/l3b_labeled_clusters_full_opus46.jsonl` | `614f3b48c24c9f9c89271356915adb10aa1b28287626962bceeea6181fe0695a` |
+| `matched_rubric_v1/l3b_labeled_clusters_full_opus47.jsonl` | `c1ad65f0689cbf1e1d1c5935b15d6990fd3dae231f085321ca805eb6854d9d98` |
+| `matched_rubric_v1/l3b_labeled_clusters_full_sonnet46.jsonl` | `6df4f702b4eef21d83b664ce9aa6983ca5b126a5aaee7d5c73caea93d8356640` |
 
 Byte-identical replay holds if the replay cache contains the 31 matched entries and the three L3 input sha256 values match the ones in the *Methodology → Inputs* table.
 
 ## What's next
 
-- **Strengthen the output contract against Opus 4.6's reasoning drift (low urgency).** The rubric v2 iteration eliminated tier-3 violations but introduced a 14% fallback rate (2/14) on Opus 4.6 specifically — the extended re-run confirmed Opus 4.7 and Sonnet 4.6 do not exhibit this drift, so the problem is Opus 4.6-specific, not Opus-family or structural. Three fixes in order of leverage: (a) prefill the assistant turn with `{"label": "` in `claude_client` so JSON continuation is structurally forced, not merely requested — cleanest, generalises across future skill edits; (b) move the *"Respond with ONLY a JSON object, no prose"* line to the top of SKILL.md and make it more emphatic; (c) raise `max_tokens` from 128 to ~256 so a short reasoning prologue + JSON both fit (regressive, increases cost and doesn't prevent the drift, only hides it). Prefer (a). Low urgency because Opus 4.6 is not the canonical labeller; if Opus 4.7 or Sonnet is the ship candidate, this fix does not block anything.
+- ~~**Strengthen the output contract against Opus 4.6's reasoning drift.**~~ **Closed** — see *Follow-up* section above. Option (a) prefill was attempted and is blocked at the model layer (Opus 4.6 API returns 400). Option (c) MAX_TOKENS bump shipped with the root-cause reframe: the truncations were sampler budget hits, not reasoning drift. 0/31 fallback on the re-run.
 - **L4 cluster-coherence should NOT rely on Mixed rate.** The labeller-variance demonstrated above is the argument. Build L4 on intra-cluster embedding variance (over member pain/expectation node vectors) as the primary signal; allow `label == "Mixed complaints"` as a weak secondary feature at most.
 - **Formal rubric-scoring run.** Execute `skills/label-cluster/rubric.md` over the 23 themed labels from the original 4-way matched run (or the post-rubric-v2 opus46 set if that is the chosen deployment). Produces a defensible anchoring/specificity score per label, not the informal reading in *Results → Labeller behavioural profiles*.
