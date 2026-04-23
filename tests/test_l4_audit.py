@@ -304,6 +304,34 @@ class TestBuildUserMessage:
         assert '<q idx="1">b</q>' in msg
         assert '<q idx="2">c</q>' in msg
 
+    def test_norman_prompt_ignores_html_and_screenshot_ref(self) -> None:
+        """Cache-preservation invariant: Norman's prompt builder reads
+        only ``label`` + ``ui_context`` + ``representative_quotes``.
+        Clusters that carry ``html`` / ``screenshot_ref`` (added to the
+        schema for code-aware audits like ``audit-accessibility``) must
+        produce a byte-identical prompt to the same cluster without
+        those fields — otherwise every replay entry Norman has cached
+        would break the moment L3b starts emitting the new fields.
+        """
+        base = _cluster(quotes=["only quote"])
+        enriched = _cluster(quotes=["only quote"])
+        # Round-trip through the model to set the extras (dataclass is
+        # frozen; re-construct).
+        enriched = InsightCluster(
+            cluster_id=base.cluster_id,
+            label=base.label,
+            member_review_ids=base.member_review_ids,
+            centroid_vector_ref=base.centroid_vector_ref,
+            representative_quotes=base.representative_quotes,
+            html="<button>X</button>",
+            screenshot_ref="data/artifacts/ui/example.png",
+        )
+        assert build_user_message(base) == build_user_message(enriched)
+        # Sanity: neither new tag leaks into Norman's prompt.
+        msg = build_user_message(enriched)
+        assert "<html>" not in msg
+        assert "<screenshot_ref>" not in msg
+
 
 # =============================================================================
 # parse_audit_response

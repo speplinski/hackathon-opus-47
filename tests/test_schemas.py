@@ -319,6 +319,44 @@ def test_insight_cluster_caps_representative_quotes_at_five() -> None:
         )
 
 
+def test_insight_cluster_optional_ui_fields_default_none() -> None:
+    """Back-compat: clusters without ui_context / html / screenshot_ref
+    (i.e. the entire L3b corpus shipped before those fields existed) must
+    still parse. Absent fields land as None so per-skill prompt builders
+    can omit their tags and keep replay-cache keys stable.
+    """
+    c = InsightCluster(
+        cluster_id="c1",
+        label="login crashes",
+        member_review_ids=["r1"],
+        centroid_vector_ref="l3_centroids.npy#0",
+        representative_quotes=["it crashes on login"],
+    )
+    assert c.ui_context is None
+    assert c.html is None
+    assert c.screenshot_ref is None
+
+
+def test_insight_cluster_accepts_html_and_screenshot_ref() -> None:
+    """Forward-compat: L3b can emit these fields once a code-aware audit
+    path is wired up. Pydantic validates them as plain optional strings —
+    no shape constraint on html (it's an arbitrary component tree) and
+    no existence check on screenshot_ref (it's a pointer, not a read).
+    """
+    c = InsightCluster(
+        cluster_id="c2",
+        label="streak-recovery modal",
+        member_review_ids=["r1"],
+        centroid_vector_ref="l3_centroids.npy#1",
+        representative_quotes=["can't find close button"],
+        ui_context="streak-recovery modal shown after a missed lesson",
+        html='<div class="modal"><button style="color:#aaa">X</button></div>',
+        screenshot_ref="data/artifacts/ui/streak_modal.png",
+    )
+    assert c.html is not None and "modal" in c.html
+    assert c.screenshot_ref == "data/artifacts/ui/streak_modal.png"
+
+
 # ---------------------------------------------------------------------------
 # §4.5 AuditVerdict + HeuristicViolation
 # ---------------------------------------------------------------------------

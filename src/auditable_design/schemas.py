@@ -273,6 +273,35 @@ class InsightCluster(_StrictModel):
             "replay-cache entries remain valid."
         ),
     )
+    html: str | None = Field(
+        default=None,
+        description=(
+            "Optional HTML/CSS excerpt of the UI surface under audit. "
+            "Consumed by audit skills whose criteria are evaluable from "
+            "markup and styles (e.g. contrast, focus visibility, "
+            "name-role-value); ignored by skills that reason only over "
+            "user voice and UI description. Expected to be a minimal, "
+            "reviewer-readable snippet (a single component tree), not a "
+            "full page dump. Prompt builders for skills that do not "
+            "consume this field MUST omit the ``<html>`` tag entirely "
+            "when it is ``None`` so existing replay-cache entries remain "
+            "valid across the schema extension."
+        ),
+    )
+    screenshot_ref: str | None = Field(
+        default=None,
+        description=(
+            "Optional pointer to a rendered screenshot of the UI surface "
+            "(e.g. ``'data/artifacts/ui/duolingo_streak_modal.png'``). "
+            "Consumed by multimodal audit skills that reason over the "
+            "rendered layout — focus-outline visibility, target-size "
+            "spacing, non-text contrast. HTML-only skills should treat "
+            "it as advisory (cite in findings' evidence but do not "
+            "require). Same opt-in rule as ``html``: prompt builders "
+            "that do not consume this field MUST omit the corresponding "
+            "tag from their prompt so cache keys stay stable."
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
