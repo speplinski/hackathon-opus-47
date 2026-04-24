@@ -345,7 +345,8 @@ def main(argv: list[str] | None = None) -> int:
 
     verdict_id = _verdict_id(SKILL_ID, cluster.cluster_id)
     produced_at = datetime.now(UTC)
-    native_stem = f"l4_verdicts_audit_decision_psychology_cluster02{suffix}"
+    cluster_stem = cluster.cluster_id.replace("_", "")
+    native_stem = f"l4_verdicts_audit_decision_psychology_{cluster_stem}{suffix}"
     verdicts_path = args.out_dir / f"{native_stem}.jsonl"
     native_path = args.out_dir / f"{native_stem}.native.jsonl"
     provenance_path = args.out_dir / f"{native_stem}.provenance.json"
