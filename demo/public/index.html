@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Auditable Design — decision infrastructure that preserves the chain of reasoning from raw user feedback to defensible design direction. Built with Claude Opus 4.7 for Anthropic's hackathon 2026.">
+<title>Auditable Design — reasoning you can inspect</title>
+<script>
+  // Theme init — runs before CSS paints to avoid flash-of-wrong-theme
+  (function () {
+    try {
+      var saved = localStorage.getItem('ad-theme');
+      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var theme = saved || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch (e) { /* noop */ }
+  })();
+  function toggleTheme() {
+    var root = document.documentElement;
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('ad-theme', next); } catch (e) {}
+  }
+</script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<button class="theme-toggle" type="button" onclick="toggleTheme()" aria-label="Toggle theme">
+  <span class="t-label-dark">Dark</span><span class="t-label-light">Light</span>
+</button>
+
+<main>
+
+<!-- ============================================================ HERO -->
+<section class="hero">
+  <div class="wrap">
+    <div class="badge">Built with Claude Opus 4.7 · Anthropic hackathon 2026</div>
+    <h1>Auditable Design</h1>
+    <p class="tag">Decision infrastructure for product teams.
+      Preserves the chain of reasoning from raw user feedback to
+      defensible design direction.</p>
+    <blockquote class="hero-quote">
+      Feedback enters the product process as <em>evidence</em>.<br>
+      It leaves as <em>opinion</em>.<br>
+      Auditable Design keeps the reasoning intact.
+    </blockquote>
+    <div class="cta-row">
+      <a href="#walkthrough" class="cta-primary">Walk through the reasoning ↓</a>
+      <a href="#brief" class="cta-secondary">See the output brief</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ PROBLEM -->
+<section class="section problem">
+  <div class="wrap">
+    <h2 class="kicker">Why this exists</h2>
+    <div class="problem-grid">
+      <div class="chain">
+        <div class="chain-step">1000+ complaints</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-step">5 themes</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-step">roadmap item</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-step">backlog ticket</div>
+        <div class="chain-arrow">→</div>
+        <div class="chain-step faded">?</div>
+      </div>
+      <p class="chain-caption">
+        Six weeks later, nobody can defend <em>why</em> that
+        decision was made. The reasoning disappears.
+      </p>
+    </div>
+    <div class="differentiator">
+      <div class="diff-row">
+        <div class="diff-left">Generic LLMs</div>
+        <div class="diff-right">summarize the corpus</div>
+      </div>
+      <div class="diff-row">
+        <div class="diff-left">Research platforms</div>
+        <div class="diff-right">organize studies (15 users, weeks)</div>
+      </div>
+      <div class="diff-row">
+        <div class="diff-left">Analytics tools</div>
+        <div class="diff-right">show behaviour, not why</div>
+      </div>
+      <div class="diff-row highlight">
+        <div class="diff-left"><strong>Auditable Design</strong></div>
+        <div class="diff-right">creates the missing layer: a traceable argument for what should change next</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ PIPELINE -->
+<section class="section pipeline" id="walkthrough">
+  <div class="wrap">
+    <h2 class="kicker">The pipeline</h2>
+    <h3 class="sec-title">Eight steps. One brief at the end.</h3>
+    <p class="sec-lede">
+      Each layer has a named purpose, typed inputs, typed outputs,
+      and an append-only provenance trail. Hover a layer to expand.
+    </p>
+    <div class="pipeline-flow" id="pipeline-flow">
+      <!-- Populated by app.js from data -->
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ CLUSTER -->
+<section class="section cluster" id="cluster">
+  <div class="wrap">
+    <h2 class="kicker">The cluster</h2>
+    <h3 class="sec-title" id="cluster-label">…</h3>
+    <p class="sec-lede" id="cluster-context">…</p>
+
+    <div class="cluster-grid">
+      <div>
+        <h4 class="subhead">Representative user quotes</h4>
+        <div class="quotes" id="cluster-quotes"></div>
+      </div>
+      <div>
+        <h4 class="subhead">Informing reviews</h4>
+        <p class="review-count">
+          <span id="review-count">…</span> review IDs aggregated
+          by the clustering step, each traceable to a specific user complaint.
+        </p>
+        <div class="review-ids" id="cluster-reviews"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ HEURISTICS -->
+<section class="section heuristics" id="heuristics">
+  <div class="wrap">
+    <h2 class="kicker">Measured pain</h2>
+    <h3 class="sec-title">What actually hurts — <span id="baseline-count">…</span> named defects, total severity <span id="baseline-sum">…</span></h3>
+    <p class="sec-lede">
+      Six design lenses read the same cluster independently —
+      Don Norman on usability, WCAG on accessibility, Kahneman on
+      decision psychology, Osterwalder on business alignment, Cooper
+      on interaction design, Garrett on UX architecture. The
+      pipeline merges their overlapping findings into one ranked
+      list. Each defect gets one severity score on a five-point
+      scale: <code>0</code> absent, <code>3</code> minor,
+      <code>5</code> moderate, <code>7</code> serious,
+      <code>9</code> critical.
+    </p>
+    <div class="heuristic-list" id="heuristic-list"></div>
+  </div>
+</section>
+
+<!-- ============================================================ GROUNDING -->
+<section class="section grounding" id="grounding">
+  <div class="wrap">
+    <h2 class="kicker">Grounded verification</h2>
+    <h3 class="sec-title">Claude Opus 4.7 checks every hypothesis against the real product</h3>
+    <p class="sec-lede">
+      Review text says what users feel. Real product pixels say
+      what they see. Opus 4.7 reads the Duolingo screenshots and
+      scores each heuristic hypothesis as confirmed, partial, or
+      refuted — with cited UI details — so the designer knows
+      which review-inferred defects hold up on the actual product.
+    </p>
+
+    <div class="screenshot-grid">
+      <figure>
+        <img src="screenshots/energy_manage.png" alt="Energy management surface" loading="lazy">
+        <figcaption>Dedicated energy-management surface —
+          non-blocking, 22h regeneration label visible.</figcaption>
+      </figure>
+      <figure>
+        <img src="screenshots/out_of_energy_home.png" alt="Out of energy — home" loading="lazy">
+        <figcaption>Between-lessons blocking modal — Super
+          pre-checked, Recharge at 450 gems, Quit muted.</figcaption>
+      </figure>
+      <figure class="key-frame">
+        <img src="screenshots/out_of_energy_mid_lesson.png" alt="Out of energy mid-lesson" loading="lazy">
+        <figcaption>Mid-lesson blocker — "Translate this sentence"
+          visible above; "LOSE XP" as punitive non-paid exit.
+          <strong>The surface this hero cluster is about.</strong></figcaption>
+      </figure>
+    </div>
+
+    <p class="disclaimer">
+      Duolingo is used as a public, worldwide-recognised freemium
+      example — not as a target. Every finding is anchored in a
+      literal quote from a
+      <a href="https://play.google.com/store/apps/details?id=com.duolingo&amp;showAllReviews=true" target="_blank" rel="noopener">publicly available Google Play review</a>,
+      every screenshot is what a paying user sees.
+      <br><br>
+      <strong>The method is product-agnostic.</strong>
+    </p>
+
+    <div class="refutation" id="refutation-callout">
+      <div class="ref-title">What the product evidence shows</div>
+      <p id="refutation-body">…</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ DIRECTION -->
+<section class="section direction" id="direction">
+  <div class="wrap">
+    <h2 class="kicker">The validated direction</h2>
+    <h3 class="sec-title">One direction generated · re-audited · converged</h3>
+    <p class="sec-lede">
+      The pipeline first proposes a before/after direction grounded
+      in the measured defects, then re-audits that direction against
+      the same heuristic list to measure how much pain actually drops.
+      If the first pass leaves residual severity, a refinement loop
+      tries further tweaks with a scored verifier — accepting changes
+      that reduce pain without regression, rejecting ones that do not.
+      Every iteration is recorded, including rejected attempts, so the
+      designer can inspect not only the final state but the full
+      reasoning path.
+    </p>
+
+    <div class="before-after">
+      <div class="ba-col">
+        <div class="ba-label">Before (current product)</div>
+        <div class="ba-body" id="before-snapshot"></div>
+      </div>
+      <div class="ba-col">
+        <div class="ba-label accept">After (validated direction)</div>
+        <div class="ba-body" id="after-snapshot"></div>
+      </div>
+    </div>
+
+    <h4 class="subhead">Iteration trajectory</h4>
+    <div class="iter-timeline" id="iter-timeline"></div>
+  </div>
+</section>
+
+<!-- ============================================================ BRIEF -->
+<section class="section brief-section" id="brief">
+  <div class="wrap">
+    <h2 class="kicker">The shipping artifact</h2>
+    <h3 class="sec-title">One markdown. Ten sections. Full audit trail.</h3>
+    <p class="sec-lede">
+      The designer opens a single document and begins. Every
+      finding traces back to evidence. Every iteration —
+      accepted or rejected — is preserved. The agent does not
+      commit, does not merge, does not ship; the work begins
+      here and is owned by the human team.
+    </p>
+    <div class="brief-preview">
+      <div class="brief-head">design_brief_cluster11_opus47.md</div>
+      <div class="brief-body">
+        <div class="brief-sec">1. Executive summary</div>
+        <div class="brief-sec">2. User pain signal</div>
+        <div class="brief-sec">3. Measured pain spaces <span class="hint">7 heuristics · grounded evidence</span></div>
+        <div class="brief-sec">4. Priority reasoning <span class="hint">5-dimensional weighted score</span></div>
+        <div class="brief-sec">5. Validated direction <span class="hint">before / after · per-heuristic delta</span></div>
+        <div class="brief-sec">6. Out-of-baseline observations <span class="hint">defect not in baseline</span></div>
+        <div class="brief-sec">7. Audit trail <span class="hint">2 iterations · 0 rejected</span></div>
+        <div class="brief-sec">8. Signal quality indicators <span class="hint">components, not rollup</span></div>
+        <div class="brief-sec">9. Handoff notes <span class="hint">guarantees vs non-guarantees</span></div>
+        <div class="brief-sec">10. Provenance <span class="hint">sha256 of every input file</span></div>
+      </div>
+      <div class="brief-cta">
+        <a class="cta-primary"
+           href="https://github.com/speplinski/hackathon-opus-47/blob/main/examples/design_brief_cluster11_opus47.md">
+          Read the full example brief →
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ CLOSE -->
+<section class="section close">
+  <div class="wrap">
+    <blockquote class="closing-quote">
+      The point is not to automate taste.<br>
+      The point is to make product reasoning <em>inspectable</em>.<br><br>
+      Not louder recommendations. Better accountability.
+    </blockquote>
+    <footer class="foot">
+      Auditable Design · <a href="https://github.com/speplinski/hackathon-opus-47">GitHub</a>
+    </footer>
+  </div>
+</section>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

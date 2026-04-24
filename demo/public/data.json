@@ -1,0 +1,235 @@
+{
+  "meta": {
+    "cluster_id": "cluster_11",
+    "model_short": "opus47",
+    "loop_verifier": "tchebycheff",
+    "baseline_sum": 55,
+    "final_sum": 3
+  },
+  "cluster": {
+    "cluster_id": "cluster_11",
+    "label": "Streak loss",
+    "member_review_ids": [
+      "104dc4f56ecd50fa03d91399cc6df590c2506fef",
+      "16dad76e9380b4d6510d7b5a04cdd6d40cf86d91",
+      "1e09575af1a8f786530871cc6b529810717d1660",
+      "1e2f9632dff3f69e23da88829b0e4c04a3ee294e",
+      "1e50fddfff28e16e670274258323b56286021c96",
+      "3a613baf1dbcf647d0065b263482598361bc3b72",
+      "3ad1a1a0d1a6cd8cfc0b2a1490991a6932ffddba",
+      "43e5983c550ae48971f35d9f73f0cff9a688766c",
+      "5a3e115adfefaec93836be475395c9daf904cb00",
+      "5b409f9b2a194e67ba94811c6553469851fccf86",
+      "5ce13849bc9e0168fb3b4a5f933a29a152e6b0e0",
+      "7da7b6a8a66d6637fd793519612eea2347fb104e",
+      "7e1c3243b147310e32b509ea22fde6b702126496",
+      "8de753021698834f7e69743b0dabf14e7ead5b33",
+      "8f527f6f2ca074cb419c84c5011af80c7a5aa370",
+      "96649b6906e19e825f45b92f8a58599038c407c5",
+      "a0397f7445fe55231b761e9e2c1c15962ef02d21",
+      "a03bf5f7faf1de9dcd34d226f82f7581f0173a09",
+      "ab37b937f1f65e32bb991447922cafbd471ce300",
+      "b65b2ba944c88c03d00536e1e8c55f4eebdcf87c",
+      "c36c39a2336b04105d23eb46e02e2a2c73570110",
+      "d5662a68756dfc6cccff15eba35ec7db4db8db1a",
+      "dee0976b5d348d628eb9077439e44e90e936f497",
+      "f29bfbb8cfd5cab9fd05777a3141ff4c7f45a896",
+      "fa2e8f99beccd3ac99837ac532561355eca6ab2e",
+      "fc2c2a9edc8a485886d05f318b1b9ac33df5c319",
+      "fff13ac43ff64e4cedc7636ecef294cfae542b0d"
+    ],
+    "representative_quotes": [
+      "losing my streak",
+      "lost all my streak and progress",
+      "lose your streak",
+      "all my streak disappeared",
+      "can't even sustain my streak"
+    ],
+    "ui_context": null
+  },
+  "reconciled": {
+    "ranked_violations": [
+      {
+        "heuristic": "deliberate_friction_misapplied__corroborated",
+        "severity": 7,
+        "violation": "Cooper's modal_excise, usability's deliberate_friction_misapplied and wide_gulf_of_execution, a11y's situational_inclusion_gap, and architecture's featuritis all describe the same defect: the energy mechanic fires mid-lesson to force a decision that could wait for a boundary.",
+        "reasoning": "rank_score=28 (severity=7 × corroboration=4, unique_frames=4) | skills=[audit-accessibility, audit-interaction-design, audit-usability-fundamentals, audit-ux-architecture] | rationale: Corroboration across 4 skill(s) (audit-accessibility, audit-interaction-design, audit-usability-fundamentals, audit-ux-architecture): Cooper's modal_excise, usability's deliberate_friction_misapplied and wide_gulf_of_execution, a11y's situational_inclusion_gap, and architecture's featuritis all describe the same defect: the energy mechanic fires mid-lesson to force a decision that could wait for a boundary.",
+        "evidence_review_ids": []
+      },
+      {
+        "heuristic": "monetisation_interrupts_value__posture_drift_within_product__skeleton_does_not_honour_priority",
+        "severity": 9,
+        "violation": "Cooper's posture_drift, Garrett's skeleton_does_not_honour_priority, and business's monetisation_interrupts_value name the same defect — the lesson surface is overridden by a monetisation surface mid-task — through interaction, architectural, and business-model lenses.",
+        "reasoning": "rank_score=27 (severity=9 × corroboration=3, unique_frames=3) | skills=[audit-business-alignment, audit-interaction-design, audit-ux-architecture] | rationale: Corroboration across 3 skill(s) (audit-business-alignment, audit-interaction-design, audit-ux-architecture): Cooper's posture_drift, Garrett's skeleton_does_not_honour_priority, and business's monetisation_interrupts_value name the same defect — the lesson surface is overridden by a monetisation surface mid-task — through interaction, architectural, and business-model lenses.",
+        "evidence_review_ids": []
+      },
+      {
+        "heuristic": "blame_the_user_framing__burdens_with_internal_problems__loss_framed_free_exit",
+        "severity": 7,
+        "violation": "A11y's loss_framed_free_exit, usability's blame_the_user_framing, and Cooper's burdens_with_internal_problems describe the same 'LOSE XP' / 'QUIT LESSON' copy as asymmetric, self-blaming, and narrating an internal rate limit as user fault.",
+        "reasoning": "rank_score=21 (severity=7 × corroboration=3, unique_frames=3) | skills=[audit-accessibility, audit-interaction-design, audit-usability-fundamentals] | rationale: Corroboration across 3 skill(s) (audit-accessibility, audit-interaction-design, audit-usability-fundamentals): A11y's loss_framed_free_exit, usability's blame_the_user_framing, and Cooper's burdens_with_internal_problems describe the same 'LOSE XP' / 'QUIT LESSON' copy as asymmetric, self-blaming, and narrating an internal rate limit as user fault.",
+        "evidence_review_ids": []
+      },
+      {
+        "heuristic": "fudgeability_absent__missing_undo",
+        "severity": 9,
+        "violation": "Usability's missing_undo and Cooper's fudgeability_absent both identify the same defect: no state preserves in-progress lesson and streak when energy depletes — the user quotes are reports of this missing state.",
+        "reasoning": "rank_score=18 (severity=9 × corroboration=2, unique_frames=2) | skills=[audit-interaction-design, audit-usability-fundamentals] | rationale: Corroboration across 2 skill(s) (audit-interaction-design, audit-usability-fundamentals): Usability's missing_undo and Cooper's fudgeability_absent both identify the same defect: no state preserves in-progress lesson and streak when energy depletes — the user quotes are reports of this missing state.",
+        "evidence_review_ids": []
+      },
+      {
+        "heuristic": "cr_undermined_by_r_dollar__pattern_declared_not_implemented__strategy_contradicts_itself",
+        "severity": 9,
+        "violation": "Business's cr_undermined_by_r_dollar and pattern_declared_not_implemented, plus architecture's strategy_contradicts_itself, name the same defect: the 'free' value proposition is contradicted by monetisation that weaponises earned progress.",
+        "reasoning": "rank_score=18 (severity=9 × corroboration=2, unique_frames=2) | skills=[audit-business-alignment, audit-ux-architecture] | rationale: Corroboration across 2 skill(s) (audit-business-alignment, audit-ux-architecture): Business's cr_undermined_by_r_dollar and pattern_declared_not_implemented, plus architecture's strategy_contradicts_itself, name the same defect: the 'free' value proposition is contradicted by monetisation that weaponises earned progress.",
+        "evidence_review_ids": []
+      },
+      {
+        "heuristic": "competing_calls_to_action__false_signifier",
+        "severity": 7,
+        "violation": "Usability's false_signifier and architecture's competing_calls_to_action name the same defect: the paid CTA carries primary visual weight while the free exit is the weakest element.",
+        "reasoning": "rank_score=14 (severity=7 × corroboration=2, unique_frames=2) | skills=[audit-usability-fundamentals, audit-ux-architecture] | rationale: Corroboration across 2 skill(s) (audit-usability-fundamentals, audit-ux-architecture): Usability's false_signifier and architecture's competing_calls_to_action name the same defect: the paid CTA carries primary visual weight while the free exit is the weakest element.",
+        "evidence_review_ids": []
+      },
+      {
+        "heuristic": "upgrade_path_opaque",
+        "severity": 7,
+        "violation": "'TRY 1 WEEK FOR FREE' CTA discloses neither post-trial price nor billing cadence.",
+        "reasoning": "rank_score=7 (severity=7 × corroboration=1, unique_frames=1) | skills=[audit-business-alignment] | rationale: Solitary audit-business-alignment finding (severity 7); no cross-skill corroboration surfaced for this defect.",
+        "evidence_review_ids": []
+      }
+    ],
+    "tensions": []
+  },
+  "priority": {
+    "dimensions": {
+      "business_impact": 9,
+      "cognitive_cost": 8,
+      "persistence": 8,
+      "reach": 9,
+      "severity": 9
+    },
+    "meta_weights": {
+      "business_impact": 0.2,
+      "cognitive_cost": 0.2,
+      "persistence": 0.2,
+      "reach": 0.2,
+      "severity": 0.2
+    },
+    "weighted_total": 8.6
+  },
+  "decision": {
+    "decision_id": "decision__cluster_11__1",
+    "description": "Decouple energy depletion from lesson interruption: auto-save in-progress lesson state with a resumable affordance, relocate the streak-risk surface to the lesson-complete boundary, and rewrite the exit copy neutrally with equal visual weight across all three paths (subscribe, watch ads, resume later).",
+    "before_snapshot": "When energy depletes mid-lesson, a full-viewport modal overrides the lesson surface and forces an immediate choice. The primary CTA 'TRY 1 WEEK FOR FREE' carries dominant green visual weight with no post-trial pricing disclosed. The free exit is rendered as 'LOSE XP' / 'QUIT LESSON' in low-contrast secondary styling — self-blaming, loss-framed copy that narrates an internal rate limit as user failure. In-progress lesson state and streak are discarded on dismiss, with no undo.",
+    "after_snapshot": "Mid-lesson energy depletion triggers an auto-save: the current question completes, lesson state persists as 'resumable,' and the streak is protected by default. The monetisation surface moves to the lesson-complete screen as a non-blocking inline panel offering three paths — 'Continue with Super' (with full pricing and billing cadence disclosed), 'Watch ads to refill,' and 'Resume tomorrow' — rendered at equal typographic and chromatic weight. Exit copy is neutral and descriptive ('Out of energy — pick up here anytime'); no loss-framing, no blame-the-user phrasing.",
+    "resolves_heuristics": [
+      "deliberate_friction_misapplied__corroborated",
+      "monetisation_interrupts_value__posture_drift_within_product__skeleton_does_not_honour_priority",
+      "blame_the_user_framing__burdens_with_internal_problems__loss_framed_free_exit",
+      "fudgeability_absent__missing_undo",
+      "competing_calls_to_action__false_signifier",
+      "upgrade_path_opaque"
+    ]
+  },
+  "iterations": [
+    {
+      "iteration_id": "iteration__cluster_11__00",
+      "iteration_index": 0,
+      "parent_iteration_id": null,
+      "accepted": true,
+      "scores": {
+        "blame_the_user_framing__burdens_with_internal_problems__loss_framed_free_exit": 7,
+        "competing_calls_to_action__false_signifier": 7,
+        "cr_undermined_by_r_dollar__pattern_declared_not_implemented__strategy_contradicts_itself": 9,
+        "deliberate_friction_misapplied__corroborated": 7,
+        "fudgeability_absent__missing_undo": 9,
+        "monetisation_interrupts_value__posture_drift_within_product__skeleton_does_not_honour_priority": 9,
+        "upgrade_path_opaque": 7
+      },
+      "severity_sum": 55,
+      "delta_per_heuristic": {},
+      "reasoning": "Baseline — heuristic severities imported verbatim from L5 reconciled verdict. No Claude call; no regression possible (iteration 0 is its own reference).",
+      "regression_reason": null,
+      "snapshot": "When energy depletes mid-lesson, a full-viewport modal overrides the lesson surface and forces an immediate choice. The primary CTA 'TRY 1 WEEK FOR FREE' carries dominant green visual weight with no post-trial pricing disclosed. The free exit is rendered as 'LOSE XP' / 'QUIT LESSON' in low-contrast secondary styling — self-blaming, loss-framed copy that narrates an internal rate limit as user failure. In-progress lesson state and streak are discarded on dismiss, with no undo.",
+      "design_artifact_ref": "/Users/speplinski/Documents/Projects/Claude/hackathon-opus-47/data/artifacts/iterations/shared_l2opus47/cluster_11_iter00.md"
+    },
+    {
+      "iteration_id": "iteration__cluster_11__01",
+      "iteration_index": 1,
+      "parent_iteration_id": "iteration__cluster_11__00",
+      "accepted": true,
+      "scores": {
+        "blame_the_user_framing__burdens_with_internal_problems__loss_framed_free_exit": 0,
+        "competing_calls_to_action__false_signifier": 0,
+        "cr_undermined_by_r_dollar__pattern_declared_not_implemented__strategy_contradicts_itself": 3,
+        "deliberate_friction_misapplied__corroborated": 0,
+        "fudgeability_absent__missing_undo": 0,
+        "monetisation_interrupts_value__posture_drift_within_product__skeleton_does_not_honour_priority": 0,
+        "upgrade_path_opaque": 0
+      },
+      "severity_sum": 3,
+      "delta_per_heuristic": {
+        "blame_the_user_framing__burdens_with_internal_problems__loss_framed_free_exit": -7,
+        "competing_calls_to_action__false_signifier": -7,
+        "cr_undermined_by_r_dollar__pattern_declared_not_implemented__strategy_contradicts_itself": -6,
+        "deliberate_friction_misapplied__corroborated": -7,
+        "fudgeability_absent__missing_undo": -9,
+        "monetisation_interrupts_value__posture_drift_within_product__skeleton_does_not_honour_priority": -9,
+        "upgrade_path_opaque": -7
+      },
+      "reasoning": "The after_snapshot structurally resolves the mid-lesson interrupt (friction, posture drift, monetisation-interrupts-value all eliminated by deferring the panel to the lesson-complete boundary) and the missing-undo defect (auto-save + resumable state + streak protection by default). Loss-framed/blame-the-user copy is replaced with neutral descriptive text, and the three paths are rendered at equal weight with full pricing and billing cadence disclosed, resolving competing_calls_to_action and upgr",
+      "regression_reason": null,
+      "snapshot": "Mid-lesson energy depletion triggers an auto-save: the current question completes, lesson state persists as 'resumable,' and the streak is protected by default. The monetisation surface moves to the lesson-complete screen as a non-blocking inline panel offering three paths — 'Continue with Super' (with full pricing and billing cadence disclosed), 'Watch ads to refill,' and 'Resume tomorrow' — rendered at equal typographic and chromatic weight. Exit copy is neutral and descriptive ('Out of energy — pick up here anytime'); no loss-framing, no blame-the-user phrasing.",
+      "design_artifact_ref": "/Users/speplinski/Documents/Projects/Claude/hackathon-opus-47/data/artifacts/iterations/shared_l2opus47/cluster_11_iter01.md"
+    }
+  ],
+  "verify_on_product": {
+    "cluster_id": "cluster_11",
+    "grounded_evidence": {
+      "deliberate_friction_misapplied__corroborated": {
+        "confirmed": "confirmed",
+        "evidence": "Screenshot 2 shows the energy modal firing mid-lesson with 'Translate this sentence' and the Sikh character prompt ('Who was going to do that?') still visible above the modal — the user is interrupted mid-task rather than at a natural boundary between lessons.",
+        "adjusted_severity": 7,
+        "reasoning": "The mid-lesson interruption is clearly visible with the lesson prompt behind the modal, matching the baseline exactly."
+      },
+      "monetisation_interrupts_value__posture_drift_within_product__skeleton_does_not_honour_priority": {
+        "confirmed": "confirmed",
+        "evidence": "In screenshot 2, the progress bar at '20/4?' and the live translation task are overridden by a full-surface monetisation modal whose primary CTA is 'TRY 1 WEEK FOR FREE' in bright blue — the lesson posture (transient learning) has been replaced with a sovereign sales posture.",
+        "adjusted_severity": 9,
+        "reasoning": "The surface hijack is total and dominates the frame; baseline severity holds."
+      },
+      "blame_the_user_framing__burdens_with_internal_problems__loss_framed_free_exit": {
+        "confirmed": "confirmed",
+        "evidence": "Screenshot 2's free exit is labelled 'LOSE XP' in muted grey centred at the bottom, and screenshot 3's exit is 'QUIT LESSON' — both frame the no-pay path as self-inflicted damage, while the headline 'You ran out of energy!' narrates an internal rate-limit as the user's failing.",
+        "adjusted_severity": 7,
+        "reasoning": "Copy matches the hypothesis verbatim; severity sustained."
+      },
+      "fudgeability_absent__missing_undo": {
+        "confirmed": "partial",
+        "evidence": "The modal offers only Super, Recharge (450 gems), or 'LOSE XP'/'QUIT LESSON' — no option to pause, save, or resume the in-progress translation task. No visible undo or state-preservation affordance exists on the modal.",
+        "adjusted_severity": 7,
+        "reasoning": "Absence of undo is strongly implied by the choice set shown, but I cannot directly see what happens on 'LOSE XP' — downgrading from 9 to 7 to reflect inferential rather than direct visual evidence."
+      },
+      "cr_undermined_by_r_dollar__pattern_declared_not_implemented__strategy_contradicts_itself": {
+        "confirmed": "confirmed",
+        "evidence": "Screenshot 2 shows 27,932 gems held by the user yet the Recharge costs only 450 — the gem economy is dwarfed, and the 'LOSE XP' option explicitly threatens earned progress, weaponising prior free-tier investment to push the Super trial.",
+        "adjusted_severity": 9,
+        "reasoning": "The contradiction between 'free to learn' and punishing earned XP to force payment is visible in the choice architecture; severity held at 9."
+      },
+      "competing_calls_to_action__false_signifier": {
+        "confirmed": "confirmed",
+        "evidence": "The Super card in screenshot 2 has a saturated magenta/cyan/green gradient border, a pre-checked blue tick, and anchors the full-width blue 'TRY 1 WEEK FOR FREE' CTA; the free exit 'LOSE XP' is rendered as small muted blue text with no button affordance, inverting visual priority.",
+        "adjusted_severity": 7,
+        "reasoning": "The visual-weight asymmetry is exactly as the baseline describes."
+      },
+      "upgrade_path_opaque": {
+        "confirmed": "confirmed",
+        "evidence": "The primary CTA 'TRY 1 WEEK FOR FREE' in screenshots 2 and 3 shows no adjacent copy disclosing post-trial price, billing cadence, or auto-renewal terms — no fine print is rendered on the modal surface.",
+        "adjusted_severity": 7,
+        "reasoning": "Opacity is fully visible; baseline severity sustained."
+      }
+    },
+    "summary": "All seven baseline heuristics were confirmed on the product, with only fudgeability_absent downgraded to partial because undo behaviour is inferential rather than directly visible. The mid-lesson screenshot is the strongest evidence: the translation task remains rendered behind a sovereign monetisation modal with asymmetric CTAs ('TRY 1 WEEK FOR FREE' as giant blue button vs 'LOSE XP' as muted text link). One additional defect not named in the baseline: the dedicated energy surface (screenshot 1) duplicates the same Super upsell at a different gem price (500 vs 450 in the modal), which is a pricing-consistency defect worth flagging. Also worth noting: the pre-checked tick on the Super card is a dark-pattern default-selection signal that the baseline does not explicitly name."
+  }
+}

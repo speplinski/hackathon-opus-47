@@ -72,7 +72,7 @@ for the submission pitch.
 The pipeline's shipping artifact is a single markdown document the
 designer opens and starts work from.
 
-**[Example — cluster_02 design brief on Opus 4.7](examples/design_brief_cluster02_opus47.md).**
+**[Example — cluster_11 design brief on Opus 4.7](examples/design_brief_cluster11_opus47.md).**
 
 Ten sections:
 
@@ -92,8 +92,9 @@ Ten sections:
 ## Key eval findings
 
 All numbers come from the hackathon's matched-model grid on
-`cluster_02`: Opus 4.6, Sonnet 4.6, and Opus 4.7 running the same
-pipeline.
+`cluster_11` (the hero cluster — "streak loss" — surfaced by L6
+priority scoring): Opus 4.6, Sonnet 4.6, and Opus 4.7 running the
+same pipeline on shared L1/L2/L3 inputs.
 
 Full eval docs live under [`docs/evals/`](docs/evals/).
 
@@ -106,71 +107,76 @@ It was:
 > Can an agent preserve, test, and correct the reasoning chain from
 > feedback to design direction?
 
-### The loop closes the gap
+### The loop reduces measurable pain across every model
 
-| Stage                                    | Severity sum — Opus 4.7 |
-|------------------------------------------|--------------------------|
-| L5 reconciled baseline — 8 heuristics    | 82                       |
-| L8 thin-spine — one L7 decision re-audit | 11                       |
-| L8 loop — iterative refinement           | **0**                    |
-| Naive single-shot baseline — B1          | 3                        |
+| Model      | L5 baseline · heuristics | L8 final severity | Reduction |
+|------------|--------------------------|-------------------|-----------|
+| Opus 4.7   | 55 · 7 heuristics        | **3**             | **95%**   |
+| Opus 4.6   | 39 · 5 heuristics        | **0**             | **100%**  |
+| Sonnet 4.6 | 50 · 6 heuristics        | **3**             | **94%**   |
 
-On the strongest model in the grid, iterative refinement beats both
-the single-round audit and the naive single-shot baseline on the
-same heuristic list.
-
-The point is not the absolute severity number. The point is that
-the pipeline can preserve a measurable pain baseline, generate a
+All three models preserve a measurable pain baseline, generate a
 direction, re-audit it, reject failed attempts, and converge toward
-a state that reduces the same measured pain.
+a state that reduces the same measured pain. Opus 4.7 and Opus 4.6
+converge in 2 iterations (thin-spine). Sonnet 4.6 needs one extra
+loop iteration to reach threshold — the loop visibly earns its keep
+on the weaker model.
 
-See [`docs/evals/l8_loop.md`](docs/evals/l8_loop.md) and
-[`docs/evals/baseline_b1_matched.md`](docs/evals/baseline_b1_matched.md).
+The absolute severity number is not the point. The point is that
+the chain is inspectable: baseline, direction, residual, and the
+reasoning for each delta are all written to disk.
 
-### Real-product grounding catches a false-positive — Opus 4.7 only
+See [`docs/evals/l8_loop.md`](docs/evals/l8_loop.md).
 
-Opus 4.7 verifies the L5 hypotheses against real Duolingo
-screenshots and **refutes** `deceptive_feedback__scarcity_timer`
-(baseline severity 7 → 0).
+### Real-product grounding confirms the baseline across all three models
 
-The review-inferred hypothesis said that a scarcity timer was part
-of the paywall pressure. The product evidence did not support that:
-the 22h regeneration label lives on a non-blocking energy surface,
-not on the blocking paywall modal where scarcity pressure would
-matter.
+Every model verifies the L5 hypotheses against real Duolingo
+screenshots. On the `cluster_11` hero cell, all three land in the
+same place: zero refutations, every baseline heuristic confirmed or
+partial.
 
-Opus 4.6 softened the same hypothesis to partial severity 5.
-Sonnet 4.6 softened it to partial severity 3.
+| Model      | Heuristics | Confirmed | Partial | Refuted |
+|------------|------------|-----------|---------|---------|
+| Opus 4.7   | 7          | 6         | 1       | 0       |
+| Opus 4.6   | 5          | 4         | 1       | 0       |
+| Sonnet 4.6 | 6          | 5         | 1       | 0       |
 
-**Neither refuted it.**
-
-Only Opus 4.7 produced a clean correction the pipeline could act
-on.
-
-Without Opus 4.7's grounded dissent, the pipeline would have
-shipped a direction addressing a defect that does not exist on the
-paywall modal.
+The review-inferred pain holds up under pixel inspection. The
+grounding layer is not a false-positive filter this run — it is a
+corroboration step that promotes review-text signal into evidence
+cited against concrete UI elements.
 
 See [`docs/evals/verify_on_product_matched.md`](docs/evals/verify_on_product_matched.md).
 
-### Grounding adds defects the feedback did not name — Opus 4.7 only
+### Grounding surfaces defects the heuristic list did not name — one per model
 
-Opus 4.7 also flags three defects the L5 heuristic list did **not**
-name:
+Each of the three models independently flagged a defect not present
+in the L5 baseline heuristics for `cluster_11`. The defects are
+different per model — three triangulations of the same three
+screenshots, three distinct observations:
 
-1. The Super option appears pre-selected with a checkmark before
-   user input — a default-bias dark pattern.
-2. There is no "continue without energy" or "pause" affordance,
-   leaving the punitive "LOSE XP" link as the only non-paid exit.
-3. The Recharge row is rendered in low-contrast grey and may fall
-   below WCAG minimums.
+- **Opus 4.7** — *pricing inconsistency across surfaces.* Super is
+  advertised at 500 gems on the energy-management surface and 450
+  gems inside the out-of-energy modal. Same product, two price
+  points in the same session.
+- **Opus 4.7** — *pre-selected Super checkmark as dark-pattern
+  default.* The SUPER card carries a coloured checkmark in the
+  corner. Read together with the largest-CTA treatment it functions
+  as a default the baseline heuristics did not explicitly name.
+- **Opus 4.6** — *"TRY 1 WEEK FOR FREE" without terms.* The primary
+  CTA promises a free trial, but no post-trial price, billing
+  cadence, or auto-renewal disclosure is visible.
+- **Sonnet 4.6** — *ad-vs-gem value asymmetry.* "Mini charge" grants
+  5 energy for one watched ad; "Recharge" costs 500 gems for 30
+  energy. The ad path is a 6× worse exchange rate by energy — a
+  hidden cost-transparency issue.
 
-Sonnet 4.6 and Opus 4.6 verified the same screenshots and flagged
-none of these.
-
-This is the critical-analysis capability this submission is meant
-to showcase: not summarisation or transformation of the input, but
-**independent observation beyond what the input describes**.
+Four defects across three models, none of which appeared in the
+L5 heuristic list. This is the critical-analysis capability this
+submission is meant to showcase: not summarisation or
+transformation of the input, but **independent observation beyond
+what the input describes**, triangulated across three VLM readings
+of the same screenshots.
 
 ---
 
@@ -187,52 +193,57 @@ The critical behaviours appear at the Opus 4.7 tier.
 
 ### Broader L5 decomposition
 
-On `cluster_02`, Opus 4.7 produced a broader and more severe L5
+On `cluster_11` (and consistently across the other five audited
+clusters in the shared-input grid), Opus 4.7 produces a broader L5
 decomposition on the same complaint corpus:
 
-- Opus 4.7 baseline severity: **82**
-- Opus 4.6 baseline severity: **57**
+- Opus 4.7 baseline — **7 heuristics**, severity sum **55**
+- Opus 4.6 baseline — **5 heuristics**, severity sum **39**
+- Sonnet 4.6 baseline — **6 heuristics**, severity sum **50**
 
 In this pipeline, that matters because the verifier has more
-explicit pain spaces to test, reduce, or reject.
+explicit pain spaces to test, reduce, or reject. A higher count is
+not valuable by itself — it is valuable when the resulting pain
+spaces are named, traceable, grounded, and available to the
+refinement loop. Opus 4.7's extra heuristics are not padding; they
+pick up structural signals (`pattern_declared_not_implemented`,
+`strategy_contradicts_itself`) that the other two models flatten
+into broader violations.
 
-A higher number is not valuable by itself. It is valuable when the
-resulting pain spaces are named, traceable, grounded, and available
-to the refinement loop.
+### Conservatism in multi-lens audit
 
-### Dissent-willingness in grounded verification
+Across the 108-cell L4 audit grid (6 clusters × 6 design lenses × 3
+models × image modality), Opus 4.7 is the most conservative of the
+three. It is the only model that ever refused to produce findings:
 
-Three models verified the L5 hypotheses against real Duolingo
-product screenshots.
+| Model      | Audited | Refused (fallback) | Total findings |
+|------------|---------|--------------------|----------------|
+| Opus 4.6   | 36/36   | 0  (0%)            | 162            |
+| Sonnet 4.6 | 32/36   | 4  (11%)           | 139            |
+| Opus 4.7   | 29/36   | **7 (19%)**        | 104            |
 
-| Model      | Confirmed | Partial | Refuted |
-|------------|-----------|---------|---------|
-| Sonnet 4.6 | 6         | 1       | 0       |
-| Opus 4.6   | 5         | 2       | 0       |
-| Opus 4.7   | 4         | 2       | **1**   |
+Opus 4.6 produces findings on every lens-cluster pair. Opus 4.7
+refuses 19% of the time, and produces ~35% fewer findings per
+accepted run. Read as *lower-noise* rather than lower-capability —
+the cells Opus 4.7 refuses are the same cells where Sonnet 4.6 also
+struggles (e.g. `decision_psychology × cluster_11`).
 
-The refuted hypothesis was not cosmetic. It was a genuine
-false-positive.
-
-The review corpus suggested scarcity-timer pressure, but Opus 4.7
-observed that the 22h regeneration label lives on a non-blocking
-surface, not on the paywall modal. That distinction matters because
-the design direction should address the actual blocking interaction,
-not an imagined defect.
+The refusal pattern is the capability the pipeline needs. An eager
+model that never pushes back is indistinguishable from a model that
+launders upstream confirmation bias into the final brief.
 
 ### Independent out-of-baseline defect discovery
 
-Opus 4.7 surfaced product defects not named in the L5 baseline:
+Every model in the grid flagged at least one defect not present in
+the L5 baseline heuristics. Opus 4.7 flagged two; Opus 4.6 and
+Sonnet 4.6 each flagged one. All four observations are grounded in
+the same three screenshots but are structurally different defects
+(pricing, default-selection, transparency, currency asymmetry).
 
-- pre-selected Super checkmark
-- missing pause / continue-without-energy affordance
-- low-contrast Recharge row
-
-These are signals the other models did not find and the feedback
-text alone could not surface.
-
-Over time, these observations can feed back into the clustering
-cycle as new heuristic candidates.
+This cross-model triangulation is a stronger signal than a single
+model's dissent: four independent observations across three VLM
+readings. Over time, these observations feed back into the
+clustering cycle as new heuristic candidates.
 
 ### Capability allocation
 
@@ -329,18 +340,24 @@ The test suite runs offline: no network and no API key required.
 
 ### Running layers locally
 
-Layer-by-layer smoke scripts for `cluster_02` on the matched grid:
+Layer-by-layer runners for the shared-input matched grid (six target
+clusters, six design lenses, three models):
 
 ```bash
-bash scripts/run_l4_*_matched.sh
-bash scripts/run_l5_reconcile_matched.sh
-bash scripts/run_l6_weight_matched.sh
-bash scripts/run_l7_decide_matched.sh
-bash scripts/run_l8_optimize_matched.sh
-bash scripts/run_l8_loop_matched.sh
-bash scripts/run_verify_on_product_matched.sh
-bash scripts/run_export_design_brief_matched.sh
-bash scripts/run_baseline_b1_matched.sh
+bash scripts/run_l1_matched.sh
+bash scripts/run_l2_matched.sh
+bash scripts/run_l3_single.sh
+bash scripts/run_l3b_shared_matched.sh
+uv run python scripts/build_l4_inputs.py
+bash scripts/run_l4_shared_matched.sh
+uv run python scripts/build_l5_bundles.py
+bash scripts/run_l5_shared_matched.sh
+bash scripts/run_l6_shared_matched.sh
+bash scripts/run_l7_shared_matched.sh
+bash scripts/run_l8_optimize_shared_matched.sh
+bash scripts/run_l8_loop_shared_matched.sh
+bash scripts/run_verify_on_product_shared_matched.sh
+bash scripts/run_export_design_brief_shared_matched.sh
 ```
 
 Each runner iterates the three-model grid:
