@@ -77,10 +77,21 @@ jobs:
   # ────────────────────────────────────────────────────────────────────────
   build-demo:
     name: Upload static demo bundle
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('demo/public/index.html') != ''
+    # NOTE: do not use hashFiles() in the job-level `if:` — it evaluates
+    # before checkout has run, so the workspace is empty and the check
+    # is always false. demo/public/index.html is part of the repo's
+    # committed state; verify by reading the working tree inside a step.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Verify demo/public exists
+        run: |
+          if [ ! -f demo/public/index.html ]; then
+            echo "::error::demo/public/index.html missing — nothing to publish"
+            exit 1
+          fi
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
