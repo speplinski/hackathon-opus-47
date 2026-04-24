@@ -274,9 +274,38 @@ class ParseError(ValueError):
     """
 
 
-# Same regex as L1: greedy outermost {...} with DOTALL tolerates code
-# fences, leading prose, trailing whitespace.
-_JSON_OBJECT_RE = re.compile(r"\{.*\}", re.DOTALL)
+def _extract_json_objects(text: str) -> list[dict[str, Any]]:
+    """Find every top-level JSON object in ``text`` via ``raw_decode``.
+
+    Tolerates the "think out loud" pattern observed on Opus 4.6 and
+    Sonnet 4.6 L2 responses: first ``{…}`` in a code fence, then
+    prose like "Wait, let me reconsider — …", then a second ``{…}``.
+    The previous greedy-regex parser concatenated both objects with
+    intervening prose and raised ``json.JSONDecodeError`` on the
+    malformed whole. ``raw_decode`` parses one object and reports
+    where it ended, so we can walk the string and collect all of
+    them.
+
+    Non-dict top-level values (lists, primitives) are dropped —
+    ``parse_response`` only accepts objects.
+    """
+    objects: list[dict[str, Any]] = []
+    decoder = json.JSONDecoder()
+    pos = 0
+    n = len(text)
+    while pos < n:
+        idx = text.find("{", pos)
+        if idx < 0:
+            break
+        try:
+            obj, end = decoder.raw_decode(text[idx:])
+        except json.JSONDecodeError:
+            pos = idx + 1
+            continue
+        if isinstance(obj, dict):
+            objects.append(obj)
+        pos = idx + end
+    return objects
 
 
 def parse_response(text: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -288,18 +317,20 @@ def parse_response(text: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]
     bound (needs to route under-minimum to quarantine — see
     :func:`extract_graph`).
 
+    When the response contains multiple JSON objects (Opus 4.6 /
+    Sonnet 4.6 sometimes emit a first attempt, prose reconsidering
+    it, then a revised attempt), the **last** parseable object wins —
+    i.e. the model's final answer rather than the draft it corrected.
+
     Raises:
         ParseError: On malformed JSON, wrong key sets, unknown
             ``node_type`` or ``relation``, duplicate ``node_id``,
             self-loop, or edge referencing a missing node_id.
     """
-    m = _JSON_OBJECT_RE.search(text)
-    if not m:
+    objects = _extract_json_objects(text)
+    if not objects:
         raise ParseError(f"no JSON object found in response: {text!r}")
-    try:
-        data = json.loads(m.group(0))
-    except json.JSONDecodeError as e:
-        raise ParseError(f"malformed JSON: {e}; text={text!r}") from e
+    data = objects[-1]
     if not isinstance(data, dict):
         raise ParseError(f"expected JSON object, got {type(data).__name__}")
 
