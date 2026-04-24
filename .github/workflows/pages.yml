@@ -66,48 +66,26 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ────────────────────────────────────────────────────────────────────────
-  # 2. Build demo — deterministic; no network access to Anthropic
+  # 2. Publish demo — vanilla static HTML/CSS/JS, no build step
+  #
+  # The demo is intentionally plain static files in demo/public/
+  # (index.html, styles.css, app.js, data.json, screenshots/). No
+  # bundler, no Node, no build pipeline. data.json is committed to the
+  # repo (built locally via ``uv run python scripts/build_demo_data.py``
+  # after a pipeline re-run). This job uploads demo/public/ verbatim
+  # as the Pages artifact.
   # ────────────────────────────────────────────────────────────────────────
   build-demo:
-    name: Build static demo bundle
-    # Guard: only runs after demo/package.json is committed. Before the demo
-    # app exists, the job is skipped rather than failing on `npm ci`.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('demo/package.json') != ''
-    needs: verify-integrity
+    name: Upload static demo bundle
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('demo/public/index.html') != ''
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: demo
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: demo/package-lock.json
-
-      - name: Install deps (frozen lockfile)
-        run: npm ci
-
-      - name: Audit deps (fail on high severity)
-        run: npm audit --production --audit-level=high
-
-      - name: Bundle frozen pipeline artifacts into demo/public/data
-        working-directory: ${{ github.workspace }}
-        run: |
-          # Copies frozen JSON from data/derived + data/log/optimization.jsonl
-          # into demo/public/data/ without rerunning the pipeline.
-          python scripts/build_demo_bundle.py
-
-      - name: Build
-        run: npm run build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: demo/dist
+          path: demo/public
 
   # ────────────────────────────────────────────────────────────────────────
   # 3. Deploy — only after a successful build on main
