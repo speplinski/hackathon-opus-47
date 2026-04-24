@@ -546,6 +546,16 @@ def main(argv: list[str] | None = None) -> int:
         choices=["pareto", "tchebycheff"],
     )
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
+    # Path overrides — default to the original matched-grid layout
+    # (cluster_02 hero). Pass explicit paths to aggregate a brief
+    # from the shared_l2opus47/ layout or any other subdirectory.
+    parser.add_argument("--clusters-path", type=Path, default=None)
+    parser.add_argument("--reconciled-path", type=Path, default=None)
+    parser.add_argument("--priority-path", type=Path, default=None)
+    parser.add_argument("--decisions-path", type=Path, default=None)
+    parser.add_argument("--iters-thin-path", type=Path, default=None)
+    parser.add_argument("--iters-loop-path", type=Path, default=None)
+    parser.add_argument("--verify-path", type=Path, default=None)
     args = parser.parse_args(argv)
 
     cluster_id = args.cluster_id
@@ -553,38 +563,39 @@ def main(argv: list[str] | None = None) -> int:
     cluster_stem = cluster_id.replace("_", "")
 
     # Locate inputs. These paths match the matched-grid naming used
-    # throughout the repo.
-    clusters_path = (
+    # throughout the repo. Each is overridable via the per-path flags
+    # above so a shared-input run can point at shared_l2opus47/ files.
+    clusters_path = args.clusters_path or (
         _REPO_ROOT
         / "data/derived/l4_audit/audit_interaction_design"
         / "audit_interaction_design_input.jsonl"
     )
-    reconciled_path = (
+    reconciled_path = args.reconciled_path or (
         _REPO_ROOT
         / "data/derived/l5_reconcile"
         / f"l5_reconciled_{cluster_stem}_{model_short}.jsonl"
     )
-    priority_path = (
+    priority_path = args.priority_path or (
         _REPO_ROOT
         / "data/derived/l6_weight"
         / f"l6_priority_{cluster_stem}_{model_short}.jsonl"
     )
-    decisions_path = (
+    decisions_path = args.decisions_path or (
         _REPO_ROOT
         / "data/derived/l7_decide"
         / f"l7_design_decisions_{cluster_stem}_{model_short}.jsonl"
     )
-    iters_thin_path = (
+    iters_thin_path = args.iters_thin_path or (
         _REPO_ROOT
         / "data/derived/l8_optimize"
         / f"l8_optimization_iterations_{cluster_stem}_{model_short}.jsonl"
     )
-    iters_loop_path = (
+    iters_loop_path = args.iters_loop_path or (
         _REPO_ROOT
         / "data/derived/l8_loop"
         / f"l8_loop_iterations_{cluster_stem}_{model_short}_{args.loop_verifier}.jsonl"
     )
-    verify_path = (
+    verify_path = args.verify_path or (
         _REPO_ROOT
         / "data/derived/verify_on_product"
         / f"verify_on_product_{cluster_stem}_{model_short}.json"
@@ -605,10 +616,16 @@ def main(argv: list[str] | None = None) -> int:
     decision = load_decisions(decisions_path)[cluster_id]
 
     iterations_rows = _load_jsonl(iters_thin_path) + _load_jsonl(iters_loop_path)
-    iterations = [OptimizationIteration.model_validate(r) for r in iterations_rows]
+    iterations_all = [OptimizationIteration.model_validate(r) for r in iterations_rows]
+    # Filter to just this cluster — the shared_l2opus47 layout packs
+    # multiple clusters into one iterations file, while the older
+    # per-cluster layout had exactly one. Filtering here covers both.
+    _prefix = f"iteration__{cluster_id}__"
+    iterations = [it for it in iterations_all if it.iteration_id.startswith(_prefix)]
     if not iterations:
         raise RuntimeError(
-            f"no iterations found at {iters_thin_path} / {iters_loop_path}"
+            f"no iterations for {cluster_id} at {iters_thin_path} / {iters_loop_path} "
+            f"(loaded {len(iterations_all)} total rows)"
         )
 
     verify_payload: dict[str, Any] | None = None
