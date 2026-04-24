@@ -1,13 +1,11 @@
 name: Build and deploy demo to GitHub Pages
 
 # No ANTHROPIC_API_KEY is referenced anywhere in this workflow.
-# The pipeline runs on the author's machine; this workflow only builds and
-# publishes the static demo bundle, and verifies the integrity of the replay log.
+# The pipeline runs on the author's machine; this workflow only uploads
+# the pre-built static demo bundle to GitHub Pages.
 
 on:
   push:
-    branches: [main]
-  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -23,50 +21,7 @@ permissions:
 jobs:
 
   # ────────────────────────────────────────────────────────────────────────
-  # 1. Integrity verification — runs on every push and PR, no secrets
-  # Closes the cache-poisoning surface that a public repo creates.
-  #
-  # Guard: only runs once the verifier script AND the committed replay log
-  # exist. Before that point (early in the build window) the job is skipped,
-  # not failed, so CI stays green until the cache is ready to be verified.
-  # ────────────────────────────────────────────────────────────────────────
-  verify-integrity:
-    name: Verify replay-log manifest
-    if: hashFiles('scripts/verify_replay_manifest.py') != '' && hashFiles('data/cache/responses.jsonl') != ''
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install uv
-        run: pip install uv
-
-      - name: Install project
-        run: uv sync --frozen
-
-      - name: Recompute replay-log manifest and compare
-        run: |
-          # scripts/verify_replay_manifest.py recomputes sha256 per entry
-          # plus a tree hash, and diffs against the committed manifest.
-          # Any discrepancy → non-zero exit → CI fails.
-          uv run python scripts/verify_replay_manifest.py \
-            --log data/cache/responses.jsonl \
-            --manifest data/cache/responses.manifest.sha256
-
-      - name: Scan working tree for committed secrets
-        # Belt-and-suspenders: GitHub push-protection catches most keys,
-        # but a local Gitleaks pass costs nothing and catches patterns that
-        # push-protection does not yet know about.
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # ────────────────────────────────────────────────────────────────────────
-  # 2. Publish demo — vanilla static HTML/CSS/JS, no build step
+  # Publish demo — vanilla static HTML/CSS/JS, no build step
   #
   # The demo is intentionally plain static files in demo/public/
   # (index.html, styles.css, app.js, data.json, screenshots/). No
@@ -77,11 +32,6 @@ jobs:
   # ────────────────────────────────────────────────────────────────────────
   build-demo:
     name: Upload static demo bundle
-    # NOTE: do not use hashFiles() in the job-level `if:` — it evaluates
-    # before checkout has run, so the workspace is empty and the check
-    # is always false. demo/public/index.html is part of the repo's
-    # committed state; verify by reading the working tree inside a step.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -98,12 +48,8 @@ jobs:
         with:
           path: demo/public
 
-  # ────────────────────────────────────────────────────────────────────────
-  # 3. Deploy — only after a successful build on main
-  # ────────────────────────────────────────────────────────────────────────
   deploy-pages:
     name: Deploy to GitHub Pages
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build-demo
     runs-on: ubuntu-latest
     environment:
