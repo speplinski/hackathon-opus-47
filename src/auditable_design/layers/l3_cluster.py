@@ -3,10 +3,11 @@
 Pipeline
 --------
 1. Read ``data/derived/l2_graphs.jsonl`` produced by L2.
-2. Extract ``pain`` and ``expectation`` node quotes (only those node types
-   carry the complaint signal we want to cluster; ``context``,
-   ``triggered_element``, ``workaround``, ``lost_value`` are deliberately
-   excluded per concept.md §6).
+2. Extract ``triggered_element`` and ``lost_value`` node quotes (see
+   § "Clusterable node type choice" below — these carry topic signal,
+   ``pain`` and ``expectation`` carry emotion/nostalgia noise and are
+   deliberately excluded; ``context`` and ``workaround`` are orthogonal
+   to the topic axis).
 3. Embed the quotes locally via :func:`auditable_design.embedders.local_encoder.encode`
    (sentence-transformers MiniLM, unit-norm, float32).
 4. Cluster with HDBSCAN first. If HDBSCAN produces zero valid clusters
@@ -18,10 +19,36 @@ Pipeline
      centroid by cosine similarity (``embeddings @ centroid/‖centroid‖``).
    - Member review IDs = all distinct ``review_id`` values among the
      cluster's nodes (multi-membership: a review can belong to multiple
-     clusters if its pain/expectation nodes landed in different clusters).
+     clusters if its clusterable nodes landed in different clusters).
 6. Write ``data/derived/l3_clusters.jsonl`` + ``l3_centroids.npy`` +
    standard ``.meta.json`` sidecar; also emit a ``l3_clusters.provenance.json``
    that captures encoder/clustering runtime tuples for replay audit.
+
+Clusterable node type choice
+----------------------------
+Initial implementation clustered on ``pain`` + ``expectation``. In
+practice that produced emotion-dominated clusters: ``pain`` nodes are
+frequently single sentiment words ("horrible", "frustrating",
+"annoying", "awful"), so complaints about *any* topic (paywall, ads,
+bugs, voice recognition) collapsed into the same emotion cluster. On
+the 306-graph opus47 L2 output, 4 of 10 HDBSCAN clusters (~46% of
+clustered material) were pure-sentiment.
+
+The switch to ``triggered_element`` + ``lost_value`` moves clustering
+onto the topic axis:
+
+* ``triggered_element`` — what in the product triggered the complaint
+  (e.g. "pay for super", "xp decreasing", "*watch a video for energy*
+  button", "ads", "recharge button"). 479 nodes.
+* ``lost_value`` — what value was lost as a consequence (e.g. "my
+  total xp", "lose my progress", "ended my 3 year loyalty"). 254
+  nodes.
+
+Both are topic-rich and concrete. ``pain`` is dropped as emotion noise.
+``expectation`` is dropped as primarily nostalgia ("used to love this
+app") that correlates loosely with topic. ``workaround`` is dropped
+because it describes the *user's response* rather than the *product
+affordance* being complained about.
 
 Label lifecycle (→ L3b)
 -----------------------
@@ -114,13 +141,40 @@ _log = logging.getLogger(__name__)
 LAYER_NAME: str = "l3_cluster"
 SCHEMA_VERSION: int = 1
 
-CLUSTERABLE_NODE_TYPES: frozenset[str] = frozenset({"pain", "expectation"})
-"""Node types embedded and clustered. Derived from concept.md §6.
+CLUSTERABLE_NODE_TYPES: frozenset[str] = frozenset({"triggered_element", "lost_value"})
+"""Node types embedded and clustered — topic-carrying nodes only.
 
-Other node_types (context, triggered_element, workaround, lost_value)
-carry structural information about the complaint but are not the
-signal we want to cluster. Excluding them keeps clusters focused on
-what users *complain about* vs *expected*.
+* ``triggered_element`` — product affordance being complained about
+  (paywall, ads, recharge button, xp, energy). 479 nodes on the opus47
+  L2 corpus of 306 graphs.
+* ``lost_value`` — what value was lost as a consequence (xp, streak,
+  loyalty, progress). 254 nodes.
+
+Choice rationale (three configurations evaluated on the same 306-graph
+input; all outputs archived alongside the live run):
+
+1. ``{"pain", "expectation"}`` (original) — 528 nodes → 10 clusters,
+   of which 4 (51 reviews, 46% of clustered material) were pure
+   sentiment ("terrible", "frustrating", "annoying", "awful"). The
+   ``pain`` nodes are frequently single emotion words that embed
+   identically regardless of the underlying topic, so complaints
+   about ads, paywall, bugs and voice recognition all collapsed into
+   the same emotion bucket.
+2. ``{"triggered_element", "lost_value"}`` (current) — 733 nodes →
+   14 clusters, **0 pure-emotion clusters**. Topic clusters include
+   energy mechanic, streak loss, lesson completion, ads, paywall,
+   xp, app freezes, AI features, chess, and updates. Reviews that
+   (1) would have placed in emotion buckets are still represented
+   via their topic nodes.
+3. ``{"triggered_element", "lost_value", "pain"}`` (evaluated,
+   rejected) — 1090 nodes → 19 clusters, but 4 of those are pure
+   emotion again (51 reviews), re-introducing the problem from (1).
+   Marginal topic gain (one extra bug-separation cluster) did not
+   justify the regression.
+
+``expectation`` (nostalgia-dominated: "used to love this app"),
+``workaround`` (user action, not product affordance), and ``context``
+(demographic/setup) remain excluded.
 """
 
 MIN_CLUSTER_SIZE_DEFAULT: int = 5
@@ -194,7 +248,7 @@ def load_l2_graphs(path: Path) -> list[ComplaintGraph]:
 def extract_clusterable_nodes(
     graphs: list[ComplaintGraph],
 ) -> tuple[list[str], list[tuple[str, str]]]:
-    """Pull ``pain``/``expectation`` node quotes plus a parallel index.
+    """Pull :data:`CLUSTERABLE_NODE_TYPES` node quotes plus a parallel index.
 
     Returns:
         ``(quotes, index)`` where ``len(quotes) == len(index)`` and
@@ -367,8 +421,9 @@ def aggregate_review_membership(
 ) -> dict[int, list[str]]:
     """Return ``{cluster_id: sorted [review_id, ...]}`` (multi-membership).
 
-    A review is in cluster ``c`` iff *any* of its pain/expectation nodes
-    landed in ``c``. Noise points (label=-1) contribute no memberships.
+    A review is in cluster ``c`` iff *any* of its clusterable nodes
+    (see :data:`CLUSTERABLE_NODE_TYPES`) landed in ``c``. Noise points
+    (label=-1) contribute no memberships.
     Review IDs are de-duped within a cluster and sorted for deterministic
     downstream diffs.
     """
@@ -461,8 +516,8 @@ def run_clustering(
 
     Raises:
         ValueError: if no clusterable nodes exist (empty L2 input or L2
-            produced no pain/expectation nodes). Fail loud rather than
-            silently emit an empty clusters file.
+            produced no :data:`CLUSTERABLE_NODE_TYPES` nodes). Fail loud
+            rather than silently emit an empty clusters file.
         RuntimeError: if both HDBSCAN and KMeans failed to produce any
             clusters (e.g. <k samples for KMeans fallback).
     """
@@ -471,7 +526,7 @@ def run_clustering(
         raise ValueError(
             f"no clusterable nodes found "
             f"(filter: {sorted(CLUSTERABLE_NODE_TYPES)}); "
-            f"did L2 produce pain/expectation nodes on this corpus?"
+            f"did L2 produce any of these node types on this corpus?"
         )
 
     _log.info("embedding %d clusterable nodes", len(quotes))
@@ -505,7 +560,8 @@ def run_clustering(
             raise RuntimeError(
                 f"KMeans fallback cannot run: only {len(embeddings)} clusterable "
                 f"nodes, need ≥ kmeans_k={kmeans_k}. Either lower --kmeans-k "
-                f"or ensure L2 produced more pain/expectation nodes."
+                f"or ensure L2 produced more clusterable nodes "
+                f"(filter: {sorted(CLUSTERABLE_NODE_TYPES)})."
             )
         labels, clustering_provenance = cluster_kmeans(embeddings, k=kmeans_k, seed=seed)
 
@@ -623,7 +679,7 @@ def main(argv: list[str] | None = None) -> int:
     repo_root = _resolve_repo_root()
 
     parser = argparse.ArgumentParser(
-        description="L3 clustering — HDBSCAN/KMeans over L2 pain/expectation nodes.",
+        description="L3 clustering — HDBSCAN/KMeans over L2 triggered_element/lost_value nodes.",
     )
     parser.add_argument(
         "--graphs",
