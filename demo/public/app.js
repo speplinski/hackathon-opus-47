@@ -15,8 +15,6 @@
   renderPipeline(data);
   renderCluster(data);
   renderHeuristics(data);
-  renderGrounding(data);
-  renderDirection(data);
 })();
 
 // ==================================================================
@@ -118,73 +116,6 @@ function renderHeuristics(data) {
     }).join('');
     return `<div class="heuristic-group">${header}${items}</div>`;
   }).join('');
-}
-
-// ==================================================================
-function renderGrounding(data) {
-  const ge = (data.verify_on_product || {}).grounded_evidence || {};
-  const verdictCounts = { confirmed: 0, partial: 0, refuted: 0 };
-  for (const k in ge) verdictCounts[ge[k].confirmed] = (verdictCounts[ge[k].confirmed] || 0) + 1;
-  const refNode = document.getElementById('refutation-body');
-  if (!refNode) return;
-  refNode.innerHTML = `
-    <strong>Opus 4.7 confirmed every baseline heuristic on the product.</strong>
-    ${verdictCounts.confirmed || 0} confirmed · ${verdictCounts.partial || 0} partial ·
-    ${verdictCounts.refuted || 0} refuted (of ${Object.keys(ge).length} heuristics).
-    The review-inferred pain holds up under pixel inspection.
-    <br><br>
-    Beyond confirmation, the grounding step surfaced a defect the baseline
-    heuristic list did not name: a <strong>pricing inconsistency across surfaces</strong>
-    — Super is 500 gems on the energy screen and 450 gems on the paywall modal,
-    same product, two price points in the same session. Not a single-surface
-    heuristic; it requires comparing values across screenshots. Flagged as a
-    candidate for the next clustering cycle.
-  `;
-}
-
-// ==================================================================
-function renderDirection(data) {
-  const d = data.decision;
-  if (d) {
-    document.getElementById('before-snapshot').textContent = d.before_snapshot;
-    document.getElementById('after-snapshot').textContent = d.after_snapshot;
-  }
-
-  const mount = document.getElementById('iter-timeline');
-  if (!mount) return;
-  const baseline = data.meta.baseline_sum;
-
-  mount.innerHTML = data.iterations.map((it, idx) => {
-    const sum = it.severity_sum;
-    const sumClass = sum === 0 ? 'zero' : '';
-    const delta = idx === 0 ? '' : `↓ ${data.iterations[idx - 1].severity_sum - sum}`;
-    const reason = it.iteration_index === 0
-      ? 'Starting point — the measured pain from the heuristic list before any design change.'
-      : humanizeInlineSlugs(it.reasoning || '');
-    return `
-      <div class="iter-item">
-        <div class="iter-idx">${String(it.iteration_index).padStart(2, '0')}</div>
-        <div class="iter-body">
-          <div>${iterationLabel(it)}</div>
-          <div class="iter-reason">${escapeHtml(reason)}</div>
-        </div>
-        <div class="iter-status">
-          <div class="iter-sum ${sumClass}">${sum}</div>
-          ${delta ? `<div class="iter-delta">${delta}</div>` : ''}
-          ${it.accepted ? '<div class="iter-accept">✓ accepted</div>' : '<div class="iter-accept" style="color:var(--verdict-confirmed)">✗ rejected</div>'}
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-function iterationLabel(it) {
-  const labels = {
-    0: '<strong>Starting point</strong>',
-    1: '<strong>After the proposed direction</strong>',
-    2: '<strong>After refinement loop</strong>',
-  };
-  return labels[it.iteration_index] || `Step ${it.iteration_index}`;
 }
 
 // ==================================================================

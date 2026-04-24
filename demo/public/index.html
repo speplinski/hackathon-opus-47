@@ -167,21 +167,26 @@
     </p>
 
     <div class="screenshot-grid">
-      <figure>
-        <img src="screenshots/energy_manage.png" alt="Energy management surface" loading="lazy">
-        <figcaption>Dedicated energy-management surface —
-          non-blocking, 22h regeneration label visible.</figcaption>
+      <figure class="mockup-phone">
+        <figcaption class="mockup-cap">Energy screen</figcaption>
+        <div class="mockup-frame mockup-frame-photo">
+          <img src="screenshots/energy_manage.jpg" alt="Energy management surface" loading="lazy">
+        </div>
+        <div class="mockup-note">Non-blocking surface · 22h regeneration label visible.</div>
       </figure>
-      <figure>
-        <img src="screenshots/out_of_energy_home.png" alt="Out of energy — home" loading="lazy">
-        <figcaption>Between-lessons blocking modal — Super
-          pre-checked, Recharge at 450 gems, Quit muted.</figcaption>
+      <figure class="mockup-phone">
+        <figcaption class="mockup-cap">Out of energy · between lessons</figcaption>
+        <div class="mockup-frame mockup-frame-photo">
+          <img src="screenshots/out_of_energy_home.jpg" alt="Out of energy — home" loading="lazy">
+        </div>
+        <div class="mockup-note">Super pre-checked · Recharge at 450 gems · Quit muted.</div>
       </figure>
-      <figure class="key-frame">
-        <img src="screenshots/out_of_energy_mid_lesson.png" alt="Out of energy mid-lesson" loading="lazy">
-        <figcaption>Mid-lesson blocker — "Translate this sentence"
-          visible above; "LOSE XP" as punitive non-paid exit.
-          <strong>The surface this hero cluster is about.</strong></figcaption>
+      <figure class="mockup-phone">
+        <figcaption class="mockup-cap">Out of energy · mid-lesson</figcaption>
+        <div class="mockup-frame mockup-frame-photo is-hero">
+          <img src="screenshots/out_of_energy_mid_lesson.jpg" alt="Out of energy mid-lesson" loading="lazy">
+        </div>
+        <div class="mockup-note">"Translate this sentence" visible above · "LOSE XP" as punitive non-paid exit. <strong>The surface this hero cluster is about.</strong></div>
       </figure>
     </div>
 
@@ -197,7 +202,20 @@
 
     <div class="refutation" id="refutation-callout">
       <div class="ref-title">What the product evidence shows</div>
-      <p id="refutation-body">…</p>
+      <p id="refutation-body">
+        <strong>Opus 4.7 confirmed every baseline heuristic on the product.</strong>
+        6 confirmed · 1 partial · 0 refuted (of 7 heuristics).
+        The review-inferred pain holds up under pixel inspection.
+        <br><br>
+        Beyond confirmation, the grounding step surfaced a defect the
+        baseline heuristic list did not name: a
+        <strong>pricing inconsistency across surfaces</strong> —
+        Super is 500 gems on the energy screen and 450 gems on the
+        paywall modal, same product, two price points in the same
+        session. Not a single-surface heuristic; it requires comparing
+        values across screenshots. Flagged as a candidate for the
+        next clustering cycle.
+      </p>
     </div>
   </div>
 </section>
@@ -211,27 +229,81 @@
       The pipeline first proposes a before/after direction grounded
       in the measured defects, then re-audits that direction against
       the same heuristic list to measure how much pain actually drops.
-      If the first pass leaves residual severity, a refinement loop
-      tries further tweaks with a scored verifier — accepting changes
-      that reduce pain without regression, rejecting ones that do not.
-      Every iteration is recorded, including rejected attempts, so the
-      designer can inspect not only the final state but the full
-      reasoning path.
+      Where residual severity remains, a refinement loop tweaks further
+      under a scored verifier — accepting changes that reduce pain
+      without regression, rejecting ones that do not. The full
+      iteration trail, including rejected attempts, lives in the
+      shipping brief below.
     </p>
 
-    <div class="before-after">
-      <div class="ba-col">
-        <div class="ba-label">Before (current product)</div>
-        <div class="ba-body" id="before-snapshot"></div>
-      </div>
-      <div class="ba-col">
-        <div class="ba-label accept">After (validated direction)</div>
-        <div class="ba-body" id="after-snapshot"></div>
-      </div>
+    <!-- Wireframe sketch of the validated direction — sans-serif on purpose, so the
+         mockup reads as a UI artefact rather than competing with the editorial copy. -->
+    <div class="mockup-row" aria-label="Wireframe sketch of the validated direction">
+      <figure class="mockup-phone">
+        <figcaption class="mockup-cap">Before — current product</figcaption>
+        <div class="mockup-frame">
+          <div class="mockup-screen">
+            <div class="mockup-statusbar"><span>9:41</span><span aria-hidden="true">•••</span></div>
+
+            <div class="mockup-gems"><span class="mockup-gem-dot" aria-hidden="true"></span>9087</div>
+
+            <div class="mockup-blocker-title">You ran out of energy!</div>
+
+            <div class="mockup-blocker-grid">
+              <div class="mockup-card mockup-card-super">
+                <div class="mockup-card-badge">SUPER<span class="mockup-card-check" aria-hidden="true">✓</span></div>
+                <div class="mockup-card-icon" aria-hidden="true">∞</div>
+                <div class="mockup-card-label">Unlimited</div>
+                <div class="mockup-card-cost mockup-card-cost-trial">Try free</div>
+              </div>
+              <div class="mockup-card mockup-card-recharge">
+                <div class="mockup-card-icon" aria-hidden="true">⚡</div>
+                <div class="mockup-card-label">Recharge</div>
+                <div class="mockup-card-cost"><span class="mockup-gem-dot" aria-hidden="true"></span>450</div>
+              </div>
+            </div>
+
+            <div class="mockup-spacer"></div>
+
+            <div class="mockup-cta-trial">Try 1 week for free</div>
+            <div class="mockup-cta-quit">Quit lesson</div>
+          </div>
+        </div>
+        <div class="mockup-note mockup-note-warn">Blame copy · Super pre-selected · price hidden behind "free trial" · "Quit lesson" framed as exit.</div>
+      </figure>
+
+      <figure class="mockup-phone">
+        <figcaption class="mockup-cap">After — generated brief</figcaption>
+        <div class="mockup-frame">
+          <div class="mockup-screen">
+          <div class="mockup-statusbar"><span>9:43</span><span aria-hidden="true">•••</span></div>
+          <div class="mockup-celebration">
+            <div class="mockup-cel-title">Nice work!</div>
+            <div class="mockup-cel-sub">+10 XP · 47-day streak</div>
+          </div>
+          <div class="mockup-spacer"></div>
+          <div class="mockup-recovery-title">You're out of energy</div>
+          <div class="mockup-recovery-sub">We saved your spot. Pick what's next.</div>
+          <ul class="mockup-options">
+            <li>
+              <div class="mockup-opt-title">Get Super</div>
+              <div class="mockup-opt-sub">$6.99/month · cancel anytime</div>
+            </li>
+            <li>
+              <div class="mockup-opt-title">Watch an ad</div>
+              <div class="mockup-opt-sub">Refills your energy</div>
+            </li>
+            <li>
+              <div class="mockup-opt-title">Come back tomorrow</div>
+              <div class="mockup-opt-sub">Refills overnight</div>
+            </li>
+          </ul>
+          </div>
+        </div>
+        <div class="mockup-note">Neutral copy · streak protected by default · three equal paths · pricing transparent · no pre-selection.</div>
+      </figure>
     </div>
 
-    <h4 class="subhead">Iteration trajectory</h4>
-    <div class="iter-timeline" id="iter-timeline"></div>
   </div>
 </section>
 
@@ -264,7 +336,7 @@
       <div class="brief-cta">
         <a class="cta-primary"
            href="https://github.com/speplinski/hackathon-opus-47/blob/main/examples/design_brief_cluster11_opus47.md">
-          Read the full example brief →
+          Read the full brief →
         </a>
       </div>
     </div>
