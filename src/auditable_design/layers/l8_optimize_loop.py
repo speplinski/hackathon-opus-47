@@ -1026,6 +1026,25 @@ def main(argv: list[str] | None = None) -> int:
         "--clusters", type=Path, default=DEFAULT_CLUSTERS
     )
     parser.add_argument("--run-id", default=None)
+    parser.add_argument(
+        "--mode",
+        choices=("live", "replay"),
+        default="replay",
+        help="Claude client mode (default: replay — reviewer-safe).",
+    )
+    parser.add_argument(
+        "--replay-log",
+        type=Path,
+        default=Path("data/cache/responses.jsonl"),
+        help="Path to the Claude replay log.",
+    )
+    parser.add_argument(
+        "--usd-ceiling",
+        type=float,
+        default=10.0,
+        help="Per-run USD kill-switch ceiling (live mode only).",
+    )
+    parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--verbose", "-v", action="store_true")
 
     args = parser.parse_args(argv)
@@ -1065,7 +1084,13 @@ def main(argv: list[str] | None = None) -> int:
         args.iterations_input, args.cluster_id
     )
 
-    client = Client()
+    client = Client(
+        mode=args.mode,
+        run_id=run_id,
+        replay_log_path=args.replay_log,
+        usd_ceiling=args.usd_ceiling,
+        concurrency=args.concurrency,
+    )
     t_hash = tweak_skill_hash()
     r_hash = reaudit_skill_hash()
 
@@ -1096,10 +1121,14 @@ def main(argv: list[str] | None = None) -> int:
     write_jsonl_atomic(
         args.iterations_output,
         [it.model_dump(mode="json") for it in outcome.new_iterations],
+        run_id=run_id,
+        layer=LAYER_NAME,
     )
     write_jsonl_atomic(
         args.native_output,
         outcome.native_payloads,
+        run_id=run_id,
+        layer=LAYER_NAME,
     )
 
     provenance = build_provenance(
