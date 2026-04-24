@@ -190,6 +190,7 @@ Respond with ONLY a JSON object, no prose, no markdown fencing. Shape:
 - `findings` is a list of 0–8 items total across all dimensions; emit more than 4 per dimension only if the evidence in the quotes is dense and distinct.
 - Every `finding.evidence_quote_idxs` entry must be a valid index into the input `<q>` list (0-based). Do not invent quote indices.
 - If a finding cannot be anchored to at least one quote index, do not emit it.
+- **Every finding MUST include `recommendation` — a non-empty, one-sentence, concrete Norman-grade actionable fix (parser-enforced, zero-tolerance — the audit falls back if any finding is missing the field).** No exceptions for findings you consider "adjacent to other audits' scope." If you cannot name a concrete Norman-grade fix, drop the finding entirely rather than emit it without a recommendation. Out-of-scope observations belong in `summary`, never in `findings`. A finding whose only "fix" is "refer to another audit" is not a Norman finding; do not emit it.
 - `heuristic` identifiers should be stable across audits — prefer the canonical names listed under each dimension over ad-hoc coinages.
 - If the cluster label is `"Mixed complaints"`, the cluster is a known-unknown signal. Emit at most one finding (dimension `system_maturity`, heuristic `incoherent_cluster`, severity ≤ 2) and use the `summary` to note that the cluster has no shared trigger to audit. Do not fabricate dimension findings to fill the structure.
 
@@ -215,7 +216,7 @@ This skill audits through Norman's cognitive-interaction lens. It will under-wei
 - **Expert-user needs** — Norman skews toward the novice. Slips (expert failure mode) are covered in Error Architecture, but speed, efficiency, and power-user ergonomics are not first-class here.
 - **Accessibility specifics** — flag as inclusion findings under System Maturity, but do not substitute this audit for a WCAG review.
 
-When a cluster clearly belongs to one of these adjacent frames, say so in the `summary` rather than stretching a Norman heuristic to cover it.
+When a cluster clearly belongs to one of these adjacent frames, say so in the `summary` rather than stretching a Norman heuristic to cover it. *Meta-observations about adjacent audits belong in `summary` alone — never in `findings`. Every emitted finding must be a Norman-grade claim with a Norman-grade recommendation; pure "defer to Kahneman / Osterwalder / WCAG" notes are summary material, never findings.*
 
 ## Worked example
 

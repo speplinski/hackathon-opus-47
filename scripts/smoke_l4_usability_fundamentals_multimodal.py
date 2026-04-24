@@ -1,37 +1,32 @@
-"""One-shot smoke for the L4 accessibility audit — text or multimodal.
+"""One-shot smoke for the L4 usability-fundamentals audit — text or multimodal.
 
-Companion to the production ``l4_audit_accessibility`` module. Takes
-one enriched cluster, calls the Anthropic SDK directly with either
-a plain text user turn or a text+image user turn, parses the response
-through the same parser the module uses, and writes verdicts / native
-/ provenance next to the module's own outputs. Zero cache interaction.
+Companion to the Norman "thin spine" module
+:mod:`auditable_design.layers.l4_audit`. Takes one enriched cluster,
+calls the Anthropic SDK directly with either a plain text user turn or
+a text+image user turn, parses the response through the same parser
+the module uses, and writes verdicts / native / provenance next to
+the module's own outputs. Zero cache interaction.
 
 The script covers both modalities so a matched-model eval (opus46 /
 sonnet46 / opus47 × text / multimodal) is one bash loop away without
-two divergent smoke entry points.
-
-Why a standalone script, not an extension of ``claude_client``
---------------------------------------------------------------
-``Client.call()`` is text-only by design (system: str, user: str) and
-its cache key is built from those strings. Threading ``image_path``
-through the client + cache-key is genuine plumbing with downstream
-consequences (replay-log schema change, test updates, hash
-invalidation). At this stage we just want to know whether multimodal
-input shifts the verdict meaningfully; if yes, we invest in the
-plumbing; if not, we save the work.
+two divergent smoke entry points. Structurally identical to
+``smoke_l4_interaction_design_multimodal.py`` — only the module
+import and provenance shape (Norman has no per-finding structured
+fields beyond the standard ``dimension`` / ``evidence_source`` axes,
+so the provenance is the leanest of the L4 smokes) differ.
 
 Output
 ------
 Mirrors the module's native output contract, with a per-(cluster,
-model, modality) suffix so all runs in a matched eval coexist. Cluster
-stem is derived from the loaded cluster's ``cluster_id`` (``cluster_02``
-→ ``cluster02``):
+model, modality) suffix so all N runs in a matched eval coexist:
 
-* text:      ``…_{clusterNN}_<modelshort>.{jsonl,native.jsonl,provenance.json}``
+* text:       ``…_{clusterNN}_<modelshort>.{jsonl,native.jsonl,provenance.json}``
 * multimodal: ``…_{clusterNN}_<modelshort>_multimodal.{jsonl,…}``
 
-Model-short mapping: claude-opus-4-6 → opus46, claude-sonnet-4-6 →
-sonnet46, claude-opus-4-7 → opus47, claude-haiku-4-5 → haiku45.
+Cluster stem is derived from the loaded cluster's ``cluster_id`` (e.g.
+``cluster_02`` → ``cluster02``). Model-short mapping: claude-opus-4-6
+→ opus46, claude-sonnet-4-6 → sonnet46, claude-opus-4-7 → opus47,
+claude-haiku-4-5 → haiku45.
 """
 
 from __future__ import annotations
@@ -51,18 +46,15 @@ sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from auditable_design.claude_client import _omits_sampling_params  # noqa: E402
 from auditable_design.layers.l4_audit import (  # noqa: E402
-    AuditParseError,
-    _fallback_native,
-    _verdict_id,
-)
-from auditable_design.layers.l4_audit_accessibility import (  # noqa: E402
     DIMENSION_KEYS,
     MAX_TOKENS,
     SKILL_ID,
     SYSTEM_PROMPT,
     TEMPERATURE,
-    WCAG_LEVELS,
+    AuditParseError,
     _build_heuristic_violations,
+    _fallback_native,
+    _verdict_id,
     build_user_message,
     parse_audit_response,
     skill_hash,
@@ -71,11 +63,11 @@ from auditable_design.schemas import AuditVerdict, InsightCluster  # noqa: E402
 
 DEFAULT_INPUT = (
     _REPO_ROOT
-    / "data/derived/l4_audit/audit_accessibility/audit_accessibility_input.jsonl"
+    / "data/derived/l4_audit/audit_usability_fundamentals/audit_usability_fundamentals_input.jsonl"
 )
-DEFAULT_SCREENSHOT = _REPO_ROOT / "data/artifacts/ui/duolingo_speak.png"
-DEFAULT_OUT_DIR = _REPO_ROOT / "data/derived/l4_audit/audit_accessibility"
-DEFAULT_MODEL = "claude-opus-4-7"
+DEFAULT_SCREENSHOT = _REPO_ROOT / "data/artifacts/ui/duolingo_streak_modal.png"
+DEFAULT_OUT_DIR = _REPO_ROOT / "data/derived/l4_audit/audit_usability_fundamentals"
+DEFAULT_MODEL = "claude-sonnet-4-6"
 
 
 def _load_cluster(path: Path) -> InsightCluster:
@@ -95,13 +87,7 @@ _MODEL_SHORT = {
 
 
 def _short_model_name(model: str) -> str:
-    """Project the full model id to the compact label used in filenames.
-
-    Dated variants (``claude-opus-4-7-20260416`` etc.) collapse to the
-    same short name as the base — the dated suffix is noise for the
-    purposes of a matched-model eval output file layout. Unknown models
-    fall back to their full id, slash-stripped.
-    """
+    """Project the full model id to the compact label used in filenames."""
     for full, short in _MODEL_SHORT.items():
         if model.startswith(full):
             return short
@@ -143,12 +129,7 @@ def _run(
 
     When ``include_image`` is True, ``media_type`` and ``image_b64``
     must both be provided and the user turn becomes a two-block
-    content (image first, then the ``<cluster>`` XML text). When
-    False, the user turn is a plain string — byte-identical to what
-    the production text-only module builds, so this path is a
-    faithful stand-in when the module's cache is cold or when we
-    want to compare text-only against multimodal without involving
-    the replay log.
+    content (image first, then the ``<cluster>`` XML text).
     """
     client = anthropic.Anthropic()
     user_text = build_user_message(cluster)
@@ -156,8 +137,6 @@ def _run(
     if include_image:
         if media_type is None or image_b64 is None:
             raise ValueError("include_image=True requires media_type and image_b64")
-        # Image first, then text — Anthropic guidance is to put the
-        # image before the instruction that references it.
         user_content: list[dict] | str = [
             {
                 "type": "image",
@@ -170,9 +149,6 @@ def _run(
             {"type": "text", "text": user_text},
         ]
     else:
-        # Plain string content — matches ``claude_client._dispatch``'s
-        # shape exactly (``"content": user``), so the text path is a
-        # faithful stand-in for the production module's call.
         user_content = user_text
 
     kwargs: dict[str, object] = {
@@ -181,15 +157,9 @@ def _run(
         "system": SYSTEM_PROMPT,
         "messages": [{"role": "user", "content": user_content}],
     }
-    # Opus 4.7 rejects `temperature` with 400. The production client
-    # (``claude_client._dispatch``) applies the same gate via
-    # ``_omits_sampling_params``; we reuse it so this smoke mirrors
-    # real behaviour exactly.
     if not _omits_sampling_params(model):
         kwargs["temperature"] = TEMPERATURE
     message = client.messages.create(**kwargs)
-    # Message.content is a list of blocks; the audit prompt elicits a
-    # single text block. Concatenate defensively.
     chunks: list[str] = []
     for block in message.content:
         if getattr(block, "type", None) == "text":
@@ -210,14 +180,20 @@ def _build_provenance(
     media_type: str | None,
     screenshot_bytes: int | None,
 ) -> dict:
+    """Mirror of ``l4_audit.build_provenance`` for one-cluster smoke.
+
+    Shape parallels the full-module provenance. Norman has no per-
+    finding structured fields (posture, product_type, etc.) so the
+    provenance is the leanest of the L4 smokes: dim-score totals, a
+    Nielsen severity histogram, findings_count, and the token / media
+    metadata every L4 smoke records.
+    """
     audited = 1 if payload is not None else 0
     fallback = 1 if payload is None else 0
 
     dim_totals = {k: 0 for k in DIMENSION_KEYS}
     findings_count = 0
     severity_hist: dict[int, int] = {1: 0, 2: 0, 3: 0, 4: 0}
-    level_hist: dict[str, int] = {lvl: 0 for lvl in WCAG_LEVELS}
-    wref_counts: dict[str, int] = {}
 
     if payload is not None:
         for k in DIMENSION_KEYS:
@@ -226,11 +202,6 @@ def _build_provenance(
             findings_count += 1
             sev = int(f["severity"])
             severity_hist[sev] = severity_hist.get(sev, 0) + 1
-            lvl = f["wcag_level"]
-            level_hist[lvl] = level_hist.get(lvl, 0) + 1
-            wref = f["wcag_ref"]
-            if wref is not None:
-                wref_counts[wref] = wref_counts.get(wref, 0) + 1
 
     return {
         "skill_id": SKILL_ID,
@@ -246,8 +217,6 @@ def _build_provenance(
         "dimension_score_totals": dim_totals,
         "findings_count": findings_count,
         "nielsen_severity_histogram": severity_hist,
-        "wcag_level_histogram": level_hist,
-        "wcag_ref_counts": dict(sorted(wref_counts.items())),
         "fallback_reasons": (
             [{"cluster_id": cluster_id, "reason": parse_error}]
             if parse_error is not None
@@ -265,10 +234,11 @@ def _build_provenance(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "Smoke for L4 audit-accessibility on one enriched cluster. "
-            "Runs either text-only or multimodal (text + PNG) and writes "
-            "verdicts / native / provenance with a per-(model, modality) "
-            "suffix so a matched-model eval can run from a single bash loop."
+            "Smoke for L4 audit-usability-fundamentals (Norman) on one "
+            "enriched cluster. Runs either text-only or multimodal "
+            "(text + PNG) and writes verdicts / native / provenance "
+            "with a per-(cluster, model, modality) suffix so a matched-"
+            "model eval can run from a single bash loop."
         )
     )
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
@@ -290,8 +260,7 @@ def main(argv: list[str] | None = None) -> int:
         help=(
             "Override the auto-generated filename suffix. Default derives "
             "from (model, modality): '_opus47' for text, "
-            "'_opus47_multimodal' for image. Used only when you need to "
-            "force a specific file layout (e.g. custom eval sweep)."
+            "'_opus47_multimodal' for image."
         ),
     )
     args = parser.parse_args(argv)
@@ -341,9 +310,8 @@ def main(argv: list[str] | None = None) -> int:
     produced_at = datetime.now(UTC)
     # Cluster stem derived from the loaded cluster's cluster_id — lets
     # one smoke handle any cluster without hardcoded filename prefixes.
-    # Backwards-compatible: cluster_01 still renders as ``cluster01``.
     cluster_stem = cluster.cluster_id.replace("_", "")
-    native_stem = f"l4_verdicts_audit_accessibility_{cluster_stem}{suffix}"
+    native_stem = f"l4_verdicts_audit_usability_fundamentals_{cluster_stem}{suffix}"
     verdicts_path = args.out_dir / f"{native_stem}.jsonl"
     native_path = args.out_dir / f"{native_stem}.native.jsonl"
     provenance_path = args.out_dir / f"{native_stem}.provenance.json"
