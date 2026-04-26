@@ -28,6 +28,14 @@ Submission for the **Anthropic Built with Opus 4.7** hackathon
 
 ---
 
+## Demo
+
+- **[3-minute video walkthrough](https://youtu.be/i9PORz--Aws)** — narrated end-to-end demo
+- **[Live site](https://speplinski.github.io/hackathon-opus-47)** — interactive walkthrough of the pipeline, the cluster, and the validated direction
+- **[Example brief output](examples/design_brief_cluster11_opus47.md)** — the markdown artifact a designer actually opens
+
+---
+
 ## Why this exists
 
 Product teams do not lack feedback. They lack an auditable path
