@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scene 09 — Brief (phone + tablet · output round-trip)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Brygada+1918:ital,wght@0,400..700;1,400..500&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --paper:        #FAF8F1;
+  --ink:          #121212;
+  --ink-soft:     #2E2C2A;
+  --muted:        #6B6560;
+  --rule:         rgba(18, 18, 18, 0.10);
+  --rule-accent:  rgba(18, 18, 18, 0.24);
+  --coral:        #C9593C;
+  --coral-soft:   #F0DED2;
+  --bg-soft:      #F2EFE6;
+  --card:         #FFFDF6;
+
+  --serif:        'Brygada 1918', 'Iowan Old Style', Georgia, serif;
+  --mono:         'JetBrains Mono', 'SF Mono', Menlo, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100vh; width: 100vw;
+  overflow: hidden; cursor: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Same diagonal radial gradient as scene_02b / scene_04 — dark
+   evidence register, gray lift top-right, near-black bottom-left. */
+body {
+  background:
+    radial-gradient(ellipse 130% 110% at 100% 0%,
+      #3E3A35 0%,
+      #322F2A 25%,
+      #252220 50%,
+      #14120F 78%,
+      #060503 100%);
+}
+
+.stage {
+  position: fixed; inset: 0;
+  perspective: 2200px;
+  perspective-origin: 50% 45%;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   TABLET — the artifact (real design_brief_cluster11_opus47.md)
+   Background plane. Slightly larger, off to the right, soft DOF blur.
+   ───────────────────────────────────────────────────────────────── */
+.tablet-wrap {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  /* IN state — initial placement, slightly turned away, smaller scale.
+     Tablet drifts continuously toward the OUT values across the whole
+     scene (subtle camera push-in). Blur is the discrete focus event. */
+  transform: translate(-34%, -52%) rotateX(6deg) rotateY(-20deg) rotateZ(0deg) scale(1.05);
+  transition:
+    transform 23s cubic-bezier(0.4, 0, 0.4, 1),
+    filter    1.2s ease-in-out;
+  filter: blur(2.2px);
+  will-change: transform, filter;
+  z-index: 1;
+}
+/* Rack focus at stage t≈1.5s — tablet sharpens (2.2 → 0). Transform
+   starts gliding immediately; lands at OUT state by scene end. */
+.stage.run .tablet-wrap {
+  transform: translate(-30%, -52%) rotateX(6deg) rotateY(-14deg) rotateZ(0deg) scale(1.17);
+  filter: blur(0px);
+  transition-delay: 0s, 1.5s;
+}
+
+.tablet-frame {
+  position: relative;
+  background: #1a1a1a;
+  padding: 18px 16px 22px;
+  border-radius: 30px;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.06),
+    0 100px 160px rgba(0, 0, 0, 0.7),
+    0 40px 80px rgba(0, 0, 0, 0.45);
+  width: 1040px;
+}
+.tablet-frame::before {
+  content: '';
+  position: absolute;
+  top: 9px; left: 50%;
+  transform: translateX(-50%);
+  width: 6px; height: 6px;
+  background: #2a2a2a;
+  border-radius: 50%;
+}
+
+.tablet-screen {
+  position: relative;
+  background: var(--paper);
+  border-radius: 16px;
+  height: 760px;
+  overflow: hidden;
+  font-family: var(--serif);
+  color: var(--ink);
+}
+
+/* ── Markdown viewer page — renders the real .md from GitHub
+   (https://raw.githubusercontent.com/speplinski/hackathon-opus-47/.../examples/design_brief_cluster11_opus47.md)
+   styled as a designer would actually open it (Bear / iA Writer feel). ── */
+.md {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 56px 72px 200px;
+  transform: translateY(0);
+  will-change: transform;
+}
+.md > .filename {
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.9rem;
+  margin-bottom: 1.6rem;
+}
+.md h1 {
+  font-style: italic;
+  font-weight: 400;
+  font-size: 2.19rem;
+  letter-spacing: -0.02em;
+  line-height: 1.18;
+  margin: 0 0 1rem;
+}
+.md .meta-row {
+  display: flex; flex-wrap: wrap; gap: 0.4rem 1rem;
+  font-family: var(--mono);
+  font-size: 0.825rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 1.6rem;
+}
+.md .meta-row strong { color: var(--ink); font-weight: 500; }
+.md hr {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 1.8rem 0;
+}
+.md h2 {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--coral);
+  margin: 0 0 0.7rem;
+}
+
+/* Section wrapper — same gaze-direction grammar as scene_04 (.layers li).
+   Whole block gets a coral tint + translateX(4px) when the focus line
+   passes through it. Includes h2 + body paragraphs + tables + lists. */
+.md .brief-section {
+  padding: 1.8rem 1.2rem 1.4rem;
+  margin: 0 -1.2rem;
+  border-radius: 6px;
+  transition:
+    background 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    transform  0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.md .brief-section.active {
+  background: rgba(201, 89, 60, 0.10);
+  transform: translateX(4px);
+}
+.md h3 {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.31rem;
+  margin: 1.2rem 0 0.5rem;
+  letter-spacing: -0.01em;
+}
+.md p {
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin-bottom: 0.7rem;
+  letter-spacing: -0.005em;
+}
+.md p strong { color: var(--ink); font-weight: 500; }
+.md p code,
+.md li code,
+.md td code {
+  font-family: var(--mono);
+  font-size: 0.78em;
+  color: var(--ink);
+  background: rgba(18, 18, 18, 0.04);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.md blockquote {
+  margin: 0.5rem 0 0.7rem;
+  padding-left: 0.9rem;
+  border-left: 2px solid var(--rule-accent);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.md ul {
+  margin: 0.4rem 0 0.9rem 1.1rem;
+  padding: 0;
+}
+.md li {
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin-bottom: 0.18rem;
+  letter-spacing: 0.02em;
+}
+.md table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.6rem 0 1rem;
+  font-size: 0.925rem;
+}
+.md th, .md td {
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: baseline;
+  letter-spacing: 0.005em;
+}
+.md th {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  border-bottom-color: var(--rule-accent);
+}
+.md td {
+  color: var(--ink-soft);
+}
+.md td code {
+  font-size: 0.78em;
+  word-break: break-word;
+}
+.md .delta-neg { color: var(--coral); font-weight: 500; }
+
+/* Cursor at the very end — lands on sha256 chain, blinks. */
+.cursor-end {
+  display: inline-block;
+  width: 0.45ch;
+  height: 1em;
+  background: var(--coral);
+  vertical-align: text-bottom;
+  margin-left: 0.06em;
+  animation: blink 0.85s steps(2) infinite;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.stage.run .cursor-end { opacity: 1; transition-delay: 21.5s; }
+@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+/* ── Scroll glide — starts AFTER the focus pull completes (~t≈3.2s),
+   constant linear pace across 10s. Linear so the eye reads at steady
+   rhythm; the section-highlight rail provides the visual cadence. ── */
+@keyframes glide {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(calc(-1 * (var(--scroll-end) * 1px))); }
+}
+.stage.run .md {
+  /* Soft ease-in (~0.6s ramp-up), near-linear cruise, gentle settle.
+     Smooths the harsh start of pure linear without the heavy accelerate-
+     then-decelerate of full ease-in-out. */
+  animation: glide 20s cubic-bezier(0.25, 0, 0.75, 1) forwards;
+  animation-delay: 3s;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   PHONE — the mockup (validated direction "after" — from scene_08 v-2)
+   Foreground plane. Smaller, off to the left, sharp focus.
+   ───────────────────────────────────────────────────────────────── */
+.phone-wrap {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  /* IN state (frame 1) — phone sharp, slightly bigger, less rotated:
+     "the output, owned, in your hand". */
+  transform: translate(-178%, -32%) rotateX(20deg) rotateY(22deg) rotateZ(-9deg) scale(1.27);
+  filter: blur(0px);
+  opacity: 1;
+  /* Transform drifts continuously across the whole scene (15s slow glide
+     from IN → OUT). Blur is the discrete rack-focus event at t=3s. */
+  transition:
+    transform 15s cubic-bezier(0.5, 0, 0.5, 1),
+    filter    1.2s ease-in-out;
+  will-change: transform, filter;
+  z-index: 2;
+}
+.stage.run .phone-wrap {
+  transform: translate(-182%, -48%) rotateX(20deg) rotateY(36deg) rotateZ(-15deg) scale(1.11);
+  filter: blur(2.2px);
+  /* transform glides continuously across 15s; blur fires at t=1.5s (sync with tablet). */
+  transition-delay: 0s, 1.5s;
+}
+
+.phone-frame {
+  position: relative;
+  background: #1a1a1a;
+  padding: 11px 9px 16px;
+  border-radius: 44px;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.08),
+    0 60px 100px rgba(0, 0, 0, 0.78),
+    0 24px 48px rgba(0, 0, 0, 0.55);
+  width: 360px;
+}
+.phone-frame::before {
+  content: '';
+  position: absolute;
+  top: 18px; left: 50%;
+  transform: translateX(-50%);
+  width: 96px; height: 26px;
+  background: #000;
+  border-radius: 14px;
+  z-index: 2;
+}
+
+.phone-screen {
+  position: relative;
+  background: #14130F;
+  border-radius: 34px;
+  height: 760px;
+  overflow: hidden;
+  color: #EDE8DC;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  padding: 60px 22px 30px;
+  display: flex;
+  flex-direction: column;
+}
+
+.phone-status {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #8A847A;
+  margin-bottom: 18px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.phone-greeting {
+  text-align: center;
+  margin-bottom: 14px;
+}
+.phone-greet-title {
+  font-size: 14px; font-weight: 600;
+  color: #EDE8DC;
+  letter-spacing: -0.005em;
+}
+.phone-greet-sub {
+  font-size: 11px; color: #8A847A;
+  margin-top: 4px;
+  letter-spacing: 0.02em;
+}
+
+.phone-divider {
+  height: 1px;
+  background: rgba(237, 232, 220, 0.08);
+  margin: 14px 0 22px;
+}
+
+.phone-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #EDE8DC;
+  margin-bottom: 5px;
+  letter-spacing: -0.01em;
+}
+.phone-section-sub {
+  font-size: 12px;
+  color: #C9C3B7;
+  margin-bottom: 22px;
+  line-height: 1.4;
+  letter-spacing: 0.005em;
+}
+
+.phone-options {
+  list-style: none;
+  display: flex; flex-direction: column;
+  gap: 10px;
+}
+.phone-options li {
+  background: rgba(237, 232, 220, 0.04);
+  border: 1px solid rgba(237, 232, 220, 0.10);
+  border-radius: 14px;
+  padding: 14px 14px 16px;
+}
+.phone-opt-title {
+  font-size: 14px; font-weight: 600;
+  color: #EDE8DC;
+  margin-bottom: 4px;
+  letter-spacing: -0.005em;
+}
+.phone-opt-sub {
+  font-size: 11px;
+  color: #8A847A;
+  line-height: 1.45;
+  letter-spacing: 0.005em;
+}
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+
+  <!-- ════════════════════════════════════════════════════════
+       TABLET (background) — real design_brief_cluster11_opus47.md
+       rendered as a designer would open it (markdown viewer feel).
+       Scrolls up across the scene; lands on the sha256 chain.
+       ════════════════════════════════════════════════════════ -->
+  <div class="tablet-wrap">
+    <div class="tablet-frame">
+      <div class="tablet-screen">
+        <div class="md" id="md">
+          <div class="filename">design_brief_cluster11_opus47.md</div>
+          <h1># Design brief — cluster_11</h1>
+
+          <div class="meta-row">
+            <span><strong>Label:</strong> Streak loss</span>
+            <span><strong>Pipeline:</strong> opus47</span>
+            <span><strong>Verifier:</strong> tchebycheff</span>
+            <span><strong>Reviews:</strong> 27</span>
+            <span><strong>Heuristics:</strong> 7</span>
+            <span><strong>Generated:</strong> 2026-04-24</span>
+          </div>
+
+          <div class="brief-section">
+            <h2>## Executive summary</h2>
+            <p>Users of <strong>streak loss</strong> report friction captured as 7 named heuristic violations across six design lenses (Norman / WCAG / Kahneman / Osterwalder / Cooper / Garrett), with reconciled severity sum <strong>55</strong>. The pipeline proposes a direction (L7) that, refined through iterative self-verification (L8 loop), drives the measured severity to <strong>3</strong> (<strong>95% reduction</strong> on the same heuristic list). Real-product verification confirms 6 of 7 heuristics, softens 1 to partial, refutes 0.</p>
+          </div>
+
+          <div class="brief-section">
+            <h2>## User pain signal</h2>
+            <p>Cluster aggregates <strong>27 reviews</strong> with 5 representative quotes captured by L3b.</p>
+            <blockquote>losing my streak</blockquote>
+            <blockquote>lost all my streak and progress</blockquote>
+            <blockquote>lose your streak</blockquote>
+            <blockquote>all my streak disappeared</blockquote>
+            <blockquote>can't even sustain my streak</blockquote>
+          </div>
+
+          <div class="brief-section">
+            <h2>## Measured pain spaces</h2>
+            <p>L5 reconciliation across six lenses produced the ranked list below. Severities use the ADR-008 anchored scale (<code>{0, 3, 5, 7, 9}</code>). Grounded evidence from product screenshots is attached per heuristic (confirmed / partial / refuted).</p>
+            <table>
+              <thead><tr><th>Heuristic</th><th>L5</th><th>Verdict</th><th>Adj.</th></tr></thead>
+              <tbody>
+                <tr><td><code>deliberate_friction_misapplied__corroborated</code></td><td>7</td><td>confirmed</td><td>7</td></tr>
+                <tr><td><code>monetisation_interrupts_value__posture_drift_within_product</code></td><td>9</td><td>confirmed</td><td>9</td></tr>
+                <tr><td><code>blame_the_user_framing__loss_framed_free_exit</code></td><td>7</td><td>confirmed</td><td>7</td></tr>
+                <tr><td><code>fudgeability_absent__missing_undo</code></td><td>9</td><td>partial</td><td>7</td></tr>
+                <tr><td><code>cr_undermined_by_r_dollar__strategy_contradicts_itself</code></td><td>9</td><td>confirmed</td><td>9</td></tr>
+                <tr><td><code>competing_calls_to_action__false_signifier</code></td><td>7</td><td>confirmed</td><td>7</td></tr>
+                <tr><td><code>upgrade_path_opaque</code></td><td>7</td><td>confirmed</td><td>7</td></tr>
+              </tbody>
+            </table>
+            <p><strong>Baseline severity sum:</strong> 55</p>
+          </div>
+
+          <div class="brief-section">
+            <h2>## Priority reasoning</h2>
+            <p>L6 weights the cluster on five dimensions (anchored 0–10).</p>
+            <table>
+              <thead><tr><th>Dimension</th><th>Score</th><th>Weight</th></tr></thead>
+              <tbody>
+                <tr><td>business_impact</td><td>9</td><td>0.20</td></tr>
+                <tr><td>cognitive_cost</td><td>8</td><td>0.20</td></tr>
+                <tr><td>persistence</td><td>8</td><td>0.20</td></tr>
+                <tr><td>reach</td><td>9</td><td>0.20</td></tr>
+                <tr><td>severity</td><td>9</td><td>0.20</td></tr>
+              </tbody>
+            </table>
+            <p><strong>Weighted total:</strong> 8.6 · validation passes: 2 · validation delta: 0.00</p>
+          </div>
+
+          <div class="brief-section">
+            <h2>## Validated direction</h2>
+            <h3>### Before (current product state, per L7)</h3>
+            <blockquote>When energy depletes mid-lesson, a full-viewport modal overrides the lesson surface and forces an immediate choice. The primary CTA 'TRY 1 WEEK FOR FREE' carries dominant green visual weight with no post-trial pricing disclosed. The free exit is rendered as 'LOSE XP' / 'QUIT LESSON' in low-contrast secondary styling — self-blaming, loss-framed copy that narrates an internal rate limit as user failure.</blockquote>
+            <h3>### After (validated direction)</h3>
+            <blockquote>Mid-lesson energy depletion triggers an auto-save: the current question completes, lesson state persists as 'resumable,' and the streak is protected by default. The monetisation surface moves to the lesson-complete screen as a non-blocking inline panel offering three paths — 'Continue with Super' (with full pricing disclosed), 'Watch ads to refill,' and 'Resume tomorrow' — at equal typographic weight.</blockquote>
+            <h3>### Per-heuristic delta (L5 baseline → loop final)</h3>
+            <table>
+              <thead><tr><th>Heuristic</th><th>Base</th><th>Final</th><th>Δ</th></tr></thead>
+              <tbody>
+                <tr><td><code>deliberate_friction_misapplied</code></td><td>7</td><td>0</td><td class="delta-neg">−7</td></tr>
+                <tr><td><code>monetisation_interrupts_value</code></td><td>9</td><td>0</td><td class="delta-neg">−9</td></tr>
+                <tr><td><code>blame_the_user_framing</code></td><td>7</td><td>0</td><td class="delta-neg">−7</td></tr>
+                <tr><td><code>fudgeability_absent</code></td><td>9</td><td>0</td><td class="delta-neg">−9</td></tr>
+                <tr><td><code>cr_undermined_by_r_dollar</code></td><td>9</td><td>3</td><td class="delta-neg">−6</td></tr>
+                <tr><td><code>competing_calls_to_action</code></td><td>7</td><td>0</td><td class="delta-neg">−7</td></tr>
+                <tr><td><code>upgrade_path_opaque</code></td><td>7</td><td>0</td><td class="delta-neg">−7</td></tr>
+              </tbody>
+            </table>
+            <p><strong>Severity reduction:</strong> 52 units (95%).</p>
+          </div>
+
+          <div class="brief-section">
+            <h2>## Out-of-baseline observations</h2>
+            <p>Real-product verification can surface defects the review-inferred heuristic list did not name. Candidates for the next clustering cycle:</p>
+            <blockquote>The dedicated energy surface duplicates the same Super upsell at a different gem price (500 vs 450 in the modal) — a pricing-consistency defect worth flagging. Also: the pre-checked tick on the Super card is a dark-pattern default-selection signal the baseline does not name.</blockquote>
+          </div>
+
+          <div class="brief-section">
+            <h2>## Audit trail — iteration log</h2>
+            <table>
+              <thead><tr><th>Iter</th><th>Status</th><th>Sev sum</th><th>Parent</th></tr></thead>
+              <tbody>
+                <tr><td>00</td><td>✓ accepted</td><td>55</td><td><code>—</code></td></tr>
+                <tr><td>01</td><td>✓ accepted</td><td>3</td><td><code>iteration__cluster_11__00</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="brief-section">
+            <h2>## Signal quality indicators</h2>
+            <ul>
+              <li>Severity reduction: <strong>95%</strong> (55 → 3)</li>
+              <li>Loop convergence: stalled · 2 total iterations · 0 rejected</li>
+              <li>Grounded-evidence ratio: 6 confirmed / 1 partial / 0 refuted (weighted score: 93%)</li>
+            </ul>
+          </div>
+
+          <div class="brief-section">
+            <h2>## Handoff — what the designer owns next</h2>
+            <p>This brief is <strong>direction, not specification</strong>. Translate into wireframes, components, and flows in the tooling your team uses (Claude design, Figma, Linear). The agent does not commit, does not merge, does not ship.</p>
+            <p><strong>Guarantees:</strong> typed chain back to informing reviews and product screenshots; ensemble-internal self-verification; every rejected loop attempt preserved.</p>
+            <p><strong>Does NOT guarantee:</strong> real-user validation; implementation feasibility; aesthetic / brand fit; that this is the only direction that would work.</p>
+          </div>
+
+          <div class="brief-section">
+            <h2>## Provenance</h2>
+            <table>
+              <thead><tr><th>Layer</th><th>Input file</th><th>sha256</th></tr></thead>
+              <tbody>
+                <tr><td>L3b cluster</td><td><code>l3b_filtered_opus47.jsonl</code></td><td><code>e108546d680fc036</code></td></tr>
+                <tr><td>L5 reconciled</td><td><code>l5_reconciled_opus47.jsonl</code></td><td><code>76cb7581efa59ce1</code></td></tr>
+                <tr><td>L6 priority</td><td><code>l6_priority_opus47.jsonl</code></td><td><code>e271e80f8cd18fcf</code></td></tr>
+                <tr><td>L7 decision</td><td><code>l7_design_decisions_opus47.jsonl</code></td><td><code>d13750a19a957491</code></td></tr>
+                <tr><td>L8 thin-spine</td><td><code>l8_optimization_iterations_opus47.jsonl</code></td><td><code>0479b71a0d07a8b4</code></td></tr>
+                <tr><td>L8 loop</td><td><code>l8_loop_iterations_cluster11_opus47.jsonl</code></td><td><code>e3b0c44298fc1c14</code></td></tr>
+                <tr><td>verify-on-product</td><td><code>verify_on_product_cluster11_opus47.json</code></td><td><code>e8d77b72b90d1e1a<span class="cursor-end"></span></code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       PHONE (foreground) — validated direction "after" mockup
+       (matches scene_08 v-2: 3-card iOS 2027 with "Nice work +10 XP",
+       "We saved your spot. Pick what's next.").
+       Sharp focus, slight drift.
+       ════════════════════════════════════════════════════════ -->
+  <div class="phone-wrap">
+    <div class="phone-frame">
+      <div class="phone-screen">
+        <div class="phone-status">
+          <span>9:43</span>
+          <span>•••</span>
+        </div>
+
+        <div class="phone-greeting">
+          <div class="phone-greet-title">Nice work!</div>
+          <div class="phone-greet-sub">+10 XP · 47-day streak</div>
+        </div>
+
+        <div class="phone-divider"></div>
+
+        <div class="phone-section-title">You're out of energy</div>
+        <div class="phone-section-sub">We saved your spot. Pick what's next.</div>
+
+        <ul class="phone-options">
+          <li>
+            <div class="phone-opt-title">Get Super</div>
+            <div class="phone-opt-sub">$6.99/month · cancel anytime</div>
+          </li>
+          <li>
+            <div class="phone-opt-title">Watch an ad</div>
+            <div class="phone-opt-sub">Refills your energy</div>
+          </li>
+          <li>
+            <div class="phone-opt-title">Come back tomorrow</div>
+            <div class="phone-opt-sub">Refills overnight</div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="hud" style="position:fixed;top:14px;right:14px;z-index:99;font-family:'JetBrains Mono',monospace;font-size:13px;color:#FAF8F1;background:rgba(0,0,0,0.75);padding:10px 14px;border-radius:6px;letter-spacing:0.04em;opacity:0;transition:opacity 0.2s;pointer-events:none;white-space:pre;display:none;"></div>
+
+<script>
+  const stage  = document.getElementById('stage');
+  const tablet = document.querySelector('.tablet-wrap');
+  const phone  = document.querySelector('.phone-wrap');
+  const md     = document.getElementById('md');
+  const screen = document.querySelector('.tablet-screen');
+  const hud    = document.getElementById('hud');
+
+  // Live tweak — same HUD pattern as scene_02b / scene_04. T / P toggle which
+  // device the keys steer (T = tablet, P = phone). HUD visible from frame 1.
+  // Phone state is locked to user-dialled values; tablet is the current target.
+  let target = 'tablet';
+  const state = {
+    tablet: { rx: 6, ry: -20, rz: 0, sc: 1.05, tx: -34, ty: -52, blur: 2.2 },
+    phone:  { rx: 20, ry: 36, rz: -15, sc: 1.11, tx: -182, ty: -48, blur: 0 },
+  };
+
+  function applyTransform() {
+    const s = state[target];
+    const el = target === 'tablet' ? tablet : phone;
+    el.style.transition = 'none';
+    const t = `translate(${s.tx}%, ${s.ty}%) rotateX(${s.rx}deg) rotateY(${s.ry}deg) rotateZ(${s.rz}deg) scale(${s.sc.toFixed(2)})`;
+    el.style.transform = t;
+    if (target === 'tablet') el.style.filter = `blur(${s.blur.toFixed(1)}px)`;
+    hud.textContent = `[${target}]\n${t}` + (target === 'tablet' ? `\nblur(${s.blur.toFixed(1)}px)` : '');
+    hud.style.opacity = 1;
+  }
+
+  // Show HUD with the phone state from frame 1 so the user knows what's selected.
+  requestAnimationFrame(() => {
+    const s = state[target];
+    hud.textContent = `[${target}]\n` +
+      `translate(${s.tx}%, ${s.ty}%) rotateX(${s.rx}deg) rotateY(${s.ry}deg) rotateZ(${s.rz}deg) scale(${s.sc.toFixed(2)})`;
+  });
+
+  // Compute scroll distance once layout settles, then auto-play.
+  // Anchor on the cursor element (end of sha256 chain). Walk the
+  // offsetParent chain so the calculation isn't distorted by the 3D
+  // transform on the tablet wrapper.
+  function offsetTopWithin(el, ancestor) {
+    let top = 0;
+    let cur = el;
+    while (cur) {
+      if (cur === ancestor) return top;
+      top += cur.offsetTop;
+      cur = cur.offsetParent;
+    }
+    return top;
+  }
+
+  function setup() {
+    const screenH   = screen.clientHeight;
+    const cursor    = document.querySelector('.cursor-end');
+    const cursorY   = offsetTopWithin(cursor, md);
+    const targetY   = screenH * 0.88;                  // cursor lands near bottom
+    const scrollEnd = Math.max(0, cursorY - targetY);
+    md.style.setProperty('--scroll-end', scrollEnd);
+
+    // Active-section tracker — rAF loop computes scroll progress (linear)
+    // and toggles `.active` on whichever .brief-section block is currently
+    // under the focus line (~40% of screen height for reading flow).
+    const sections  = Array.from(md.querySelectorAll('.brief-section'));
+    const sectionsY = sections.map(s => offsetTopWithin(s, md));
+    const focusOffset = screenH * 0.40;
+    const animDelayMs    = 3000;                        // CSS animation-delay
+    const animDurationMs = 20000;                       // CSS animation duration
+
+    let runStartMs = 0;
+    let stopped = false;
+    function tick(now) {
+      if (stopped) return;
+      const elapsed = now - runStartMs - animDelayMs;
+
+      // No highlight before scroll begins — section #1 lights up exactly
+      // when the scroll kicks in (rather than from the moment the doc is sharp).
+      if (elapsed < 0) {
+        sections.forEach(s => s.classList.remove('active'));
+        requestAnimationFrame(tick);
+        return;
+      }
+
+      const progress = Math.max(0, Math.min(1, elapsed / animDurationMs));
+      const scrollY = progress * scrollEnd;
+      const focusY  = scrollY + focusOffset;            // page-coord under the eye
+
+      // Find last section whose Y has been passed by the focus line.
+      let activeIdx = -1;
+      for (let i = 0; i < sectionsY.length; i++) {
+        if (sectionsY[i] <= focusY) activeIdx = i;
+        else break;
+      }
+      sections.forEach((s, i) => s.classList.toggle('active', i === activeIdx));
+
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      stage.classList.add('run');
+      runStartMs = performance.now();
+      requestAnimationFrame(tick);
+    }));
+  }
+
+  setTimeout(setup, 1500);
+
+  document.addEventListener('keydown', e => {
+    // Switch tweak target between phone and tablet.
+    if (e.key === 't' || e.key === 'T') { target = 'tablet'; applyTransform(); return; }
+    if (e.key === 'p' || e.key === 'P') { target = 'phone';  applyTransform(); return; }
+
+    const TWEAK_KEYS = [
+      'ArrowUp','ArrowDown','ArrowLeft','ArrowRight',
+      'w','W','s','S',
+      'h','H','j','J','k','K','l','L',
+      '+','=','-','_','0',
+      '[', ']'
+    ];
+    if (TWEAK_KEYS.includes(e.key)) {
+      e.preventDefault();
+      const s = state[target];
+      switch (e.key) {
+        case 'ArrowUp':    s.rx -= 2; break;
+        case 'ArrowDown':  s.rx += 2; break;
+        case 'ArrowLeft':  s.rz -= 2; break;
+        case 'ArrowRight': s.rz += 2; break;
+        case 'w': case 'W': s.ry -= 2; break;
+        case 's': case 'S': s.ry += 2; break;
+        case 'h': case 'H': s.tx -= 4; break;
+        case 'l': case 'L': s.tx += 4; break;
+        case 'k': case 'K': s.ty -= 4; break;
+        case 'j': case 'J': s.ty += 4; break;
+        case '+': case '=': s.sc += 0.04; break;
+        case '-': case '_': s.sc -= 0.04; break;
+        case '[': if (target === 'tablet') s.blur = Math.max(0, s.blur - 0.2); break;
+        case ']': if (target === 'tablet') s.blur += 0.2; break;
+        case '0':
+          if (target === 'tablet') Object.assign(state.tablet, { rx: 6, ry: -20, rz: 0, sc: 1.05, tx: -34, ty: -52, blur: 2.2 });
+          else                     Object.assign(state.phone,  { rx: 20, ry: 36, rz: -15, sc: 1.11, tx: -182, ty: -48, blur: 0 });
+          break;
+      }
+      applyTransform();
+      return;
+    }
+
+    if (e.key === 'r' || e.key === 'R') location.reload();
+    if (e.code === 'Space') { e.preventDefault(); location.href = 'scene_11_closing.html'; }
+  });
+</script>
+
+</body>
+</html>

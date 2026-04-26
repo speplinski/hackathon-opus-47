@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scene 04 — Pipeline</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Brygada+1918:ital,wght@0,400..700;1,400..500&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg-dark:  #0A0908;
+  --paper:    #FAF8F1;
+  --ink:      #121212;
+  --ink-soft: #2E2C2A;
+  --muted:    #6B6560;
+  --rule:     rgba(18, 18, 18, 0.10);
+  --rule-soft: rgba(18, 18, 18, 0.06);
+  --bg-soft:  #F2EFE6;
+  --coral:    #C9593C;
+  --serif:    'Brygada 1918', 'Iowan Old Style', Georgia, serif;
+  --mono:     'JetBrains Mono', 'SF Mono', Menlo, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100vh; width: 100vw;
+  overflow: hidden; cursor: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 130% 110% at 100% 0%,
+      #3E3A35 0%,
+      #322F2A 25%,
+      #252220 50%,
+      #14120F 78%,
+      #060503 100%);
+}
+
+.stage {
+  position: fixed; inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1600px;
+  perspective-origin: 50% 30%;
+}
+
+.phone-wrap {
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  transform: translate(100px, 20px) rotateX(36deg) rotateY(24deg) rotateZ(-24deg) scale(2.10);
+  transition: transform 3s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+}
+.stage.run .phone-wrap {
+  transform: translate(0px, 0px) rotateX(34deg) rotateY(16deg) rotateZ(-16deg) scale(2.10);
+}
+
+.phone-frame {
+  position: relative;
+  background: #1a1a1a;
+  padding: 14px 12px 22px;
+  border-radius: 52px;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.08),
+    0 80px 120px rgba(0, 0, 0, 0.7),
+    0 30px 60px rgba(0, 0, 0, 0.5);
+  width: 380px;
+}
+.phone-frame::before {
+  content: '';
+  position: absolute;
+  top: 22px; left: 50%;
+  transform: translateX(-50%);
+  width: 110px; height: 28px;
+  background: #000;
+  border-radius: 14px;
+  z-index: 2;
+}
+
+.phone-screen {
+  position: relative;
+  background: var(--paper);
+  border-radius: 38px;
+  height: 800px;
+  overflow: hidden;
+  font-family: var(--serif);
+  color: var(--ink);
+}
+
+.page {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 60px 28px 80px;
+  transform: translateY(0);
+  transition: transform 3s cubic-bezier(0.5, 0, 0.5, 1);
+  will-change: transform;
+}
+.stage.run .page { transform: translateY(-160px); }
+
+.filename {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: 500;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 1rem;
+  margin-bottom: 1.6rem;
+}
+
+.page h1 {
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.45rem;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: 2rem;
+}
+.page h1 em { color: var(--coral); font-style: italic; font-weight: 500; }
+
+.layers {
+  list-style: none;
+  padding: 0;
+}
+.layers li {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  align-items: baseline;
+  gap: 14px;
+  padding: 14px 12px;
+  margin: 0 -12px;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 6px;
+  transition:
+    background 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.layers li:last-child { border-bottom: 0; }
+
+/* Active — virtual finger highlight as it scrolls past each layer. */
+.layers li.active {
+  background: rgba(201, 89, 60, 0.10);
+  transform: translateX(4px);
+}
+.layers li.active .step-name { color: var(--coral); }
+.layers li.active .num       { color: var(--ink); }
+
+.num {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  color: var(--coral);
+  font-weight: 500;
+  transition: color 0.45s ease;
+}
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.step-name {
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  line-height: 1.2;
+  transition: color 0.45s ease;
+}
+.step-desc {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  line-height: 1.45;
+  text-transform: lowercase;
+}
+.opus-tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.16em;
+  background: var(--coral);
+  color: var(--paper);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+  text-transform: uppercase;
+  margin-top: 4px;
+  align-self: flex-start;
+}
+</style>
+</head>
+<body>
+
+<div id="hud" style="position:fixed;top:14px;right:14px;z-index:99;font-family:'JetBrains Mono',monospace;font-size:13px;color:#FAF8F1;background:rgba(0,0,0,0.65);padding:8px 12px;border-radius:6px;letter-spacing:0.04em;opacity:0;transition:opacity 0.2s;pointer-events:none;"></div>
+
+<div class="stage" id="stage">
+  <div class="phone-wrap">
+    <div class="phone-frame">
+      <div class="phone-screen">
+        <div class="page" id="page">
+          <div class="filename">pipeline / l1 — l8</div>
+          <h1>Eight layers. <em>One brief at the end.</em></h1>
+
+          <ol class="layers">
+            <li>
+              <span class="num">01</span>
+              <div class="step-content">
+                <div class="step-name">Signal extraction</div>
+                <div class="step-desc">classify · structure · cluster · label</div>
+              </div>
+            </li>
+            <li>
+              <span class="num">02</span>
+              <div class="step-content">
+                <div class="step-name">Multi-lens audit</div>
+                <div class="step-desc">Norman · WCAG · Kahneman · Osterwalder · Cooper · Garrett</div>
+              </div>
+            </li>
+            <li>
+              <span class="num">03</span>
+              <div class="step-content">
+                <div class="step-name">Reconciliation</div>
+                <div class="step-desc">hero cluster: 7 named heuristics · severity sum 55</div>
+              </div>
+            </li>
+            <li>
+              <span class="num">04</span>
+              <div class="step-content">
+                <div class="step-name">Priority scoring</div>
+                <div class="step-desc">hero cluster weighted total 8.6 (top across 6 clusters)</div>
+              </div>
+            </li>
+            <li>
+              <span class="num">05</span>
+              <div class="step-content">
+                <div class="step-name">Direction generation</div>
+                <div class="step-desc">one decision per priority</div>
+              </div>
+            </li>
+            <li>
+              <span class="num">06</span>
+              <div class="step-content">
+                <div class="step-name">Iterative refinement</div>
+                <div class="step-desc">verifier-gated loop · hero cluster converged in 2 iterations</div>
+              </div>
+            </li>
+            <li>
+              <span class="num">07</span>
+              <div class="step-content">
+                <div class="step-name">Real-product grounding</div>
+                <div class="step-desc">Claude Opus 4.7 checks each hypothesis against screenshots</div>
+                <span class="opus-tag">Opus 4.7</span>
+              </div>
+            </li>
+            <li>
+              <span class="num">08</span>
+              <div class="step-content">
+                <div class="step-name">Design brief export</div>
+                <div class="step-desc">ten-section markdown for the designer</div>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const stage = document.getElementById('stage');
+  const phone = document.querySelector('.phone-wrap');
+  const hud   = document.getElementById('hud');
+
+  let rx = 34, ry = 16, rz = -16, sc = 2.10;
+  let tx = 0, ty = 0;
+
+  function applyTransform() {
+    phone.style.transition = 'none';
+    const t = `translate(${tx}px, ${ty}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale(${sc.toFixed(2)})`;
+    phone.style.transform = t;
+    hud.textContent = t;
+    hud.style.opacity = 1;
+  }
+
+  requestAnimationFrame(() => requestAnimationFrame(() => stage.classList.add('run')));
+
+  // Virtual finger — slides through layer items, briefly highlighting each.
+  // 8 items over ~2.8s, leaves 200ms hold before scene cuts.
+  const items = document.querySelectorAll('.layers li');
+  items.forEach((item, i) => {
+    setTimeout(() => {
+      items.forEach(x => x.classList.remove('active'));
+      item.classList.add('active');
+    }, 250 + i * 320);
+  });
+  // Fade out the last active state at the end so all items settle.
+  setTimeout(() => {
+    items.forEach(x => x.classList.remove('active'));
+  }, 250 + items.length * 320 + 250);
+
+  document.addEventListener('keydown', e => {
+    const TWEAK_KEYS = [
+      'ArrowUp','ArrowDown','ArrowLeft','ArrowRight',
+      'w','W','s','S',
+      'h','H','j','J','k','K','l','L',
+      '+','=','-','_','0'
+    ];
+    if (TWEAK_KEYS.includes(e.key)) {
+      e.preventDefault();
+      switch (e.key) {
+        case 'ArrowUp':    rx -= 2; break;
+        case 'ArrowDown':  rx += 2; break;
+        case 'ArrowLeft':  rz -= 2; break;
+        case 'ArrowRight': rz += 2; break;
+        case 'w': case 'W': ry -= 2; break;
+        case 's': case 'S': ry += 2; break;
+        case 'h': case 'H': tx -= 20; break;
+        case 'l': case 'L': tx += 20; break;
+        case 'k': case 'K': ty -= 20; break;
+        case 'j': case 'J': ty += 20; break;
+        case '+': case '=': sc += 0.05; break;
+        case '-': case '_': sc -= 0.05; break;
+        case '0': rx = 34; ry = 16; rz = -16; sc = 2.10; tx = 0; ty = 0; break;
+      }
+      applyTransform();
+      return;
+    }
+
+    if (e.key === 'r' || e.key === 'R') location.reload();
+    if (e.code === 'Space') { e.preventDefault(); location.href = 'scene_05_cluster.html'; }
+  });
+</script>
+
+</body>
+</html>

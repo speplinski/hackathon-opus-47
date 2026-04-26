@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scene 01 — Hook</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Brygada+1918:ital,wght@0,400..700;1,400..500&display=swap');
+
+:root {
+  /* Palette matched to scenes 02b / 04 / 05 / 05b for visual continuity. */
+  --bg-cream:        #FAF8F1;
+  --fg-ink:          #1F1F1F;
+  --fg-cream:        #EDE8DC;
+  --dev-dot:         #1A1816;  /* warm dark — blends into the dark gradient */
+  --coral:           #C9593C;
+  --serif: 'Brygada 1918', 'Iowan Old Style', Georgia, serif;
+
+  --ease-in-out:     cubic-bezier(0.65, 0.02, 0.18, 1);
+  --ease-spring:     cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100vh; width: 100vw;
+  overflow: hidden; cursor: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: var(--serif);
+}
+
+/* Cream paper. Stays cream the whole scene — the "dark" phase is created
+   by the dev dots growing big enough to cover the paper themselves. */
+body {
+  background: var(--bg-cream);
+}
+
+.stage { position: fixed; inset: 0; }
+
+/* Centred wrapper for each beat. */
+.beat {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ── Coral dot — flat. Enters with a heartbeat-style pulse
+   (lub-dub like a sleeping Mac LED waking up), then exits via scale. ── */
+.coral-dot {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: var(--coral);
+  transform: translate(-50%, -50%) scale(0);
+  z-index: 5;
+}
+.coral-dot.in  {
+  animation: heartbeatIn 1.4s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
+}
+.coral-dot.out {
+  animation: heartbeatOut 0.55s var(--ease-in-out) forwards;
+}
+/* Entrance — small flash, contract, larger flash, settle. */
+@keyframes heartbeatIn {
+  0%   { transform: translate(-50%, -50%) scale(0); }
+  18%  { transform: translate(-50%, -50%) scale(0.55); }   /* lub */
+  32%  { transform: translate(-50%, -50%) scale(0.40); }
+  52%  { transform: translate(-50%, -50%) scale(1.05); }    /* dub */
+  70%  { transform: translate(-50%, -50%) scale(0.96); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes heartbeatOut {
+  from { transform: translate(-50%, -50%) scale(1); }
+  to   { transform: translate(-50%, -50%) scale(0); }
+}
+
+
+/* ── Dev dot field — brick pattern grid. Each dot grows to its OWN random
+   target scale and at its own duration, so the field swells irregularly
+   across the screen and ends up covering the cream paper. ── */
+.dot-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4vw;
+  width: 100vw;
+  height: 100vh;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  /* Override centred .beat positioning — this beat fills the whole screen. */
+  top: 0; left: 0;
+  transform: none;
+}
+.dot-row {
+  display: flex;
+  gap: 0.4vw;
+  flex-shrink: 0;
+}
+.dot-row.shifted {
+  /* 50% offset: half cell (2vw) + half gap (0.2vw) = 2.2vw */
+  margin-left: 2.2vw;
+}
+.dev-dot {
+  width: 4vw;
+  height: 4vw;
+  border-radius: 50%;
+  background: var(--dev-dot);
+  flex-shrink: 0;
+  transform: scale(0);
+  /* Each dot reads its own --scale (target) and --dur (growth time)
+     from inline style, so the field grows unevenly. */
+  --scale: 2.4;
+  --dur: 1.0s;
+  transition: transform var(--dur) var(--ease-spring), opacity 0.9s var(--ease-in-out);
+}
+.dev-dot.in  { transform: scale(var(--scale)); opacity: 1; }
+.dev-dot.out { transform: scale(0); transition: transform 0.32s var(--ease-in-out); }
+
+/* ── Type — char-by-char typing. Caret blinks while active.
+   Color flips with body.dark so type stays legible on either bg. ── */
+.text-line {
+  font-style: italic;
+  font-weight: 400;
+  font-size: 7.6vw;
+  line-height: 1.4;
+  padding: 0.15em 0;
+  letter-spacing: -0.022em;
+  color: var(--fg-ink);
+  white-space: nowrap;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  overflow: visible;
+  z-index: 7;
+  transition: color 0.6s var(--ease-in-out);
+}
+body.dark .text-line { color: var(--fg-cream); }
+
+.text-line .caret {
+  display: inline-block;
+  width: 0.045em;
+  height: 0.85em;
+  background: var(--fg-ink);
+  margin-left: 0.06em;
+  opacity: 0;
+  transition: background 0.6s var(--ease-in-out);
+}
+body.dark .text-line .caret { background: var(--fg-cream); }
+.text-line.typing .caret { animation: blink 0.85s steps(2) infinite; }
+@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <div class="beat coral-dot" id="b1"></div>
+  <div class="beat text-line" id="b2"><span class="content"></span><span class="caret"></span></div>
+  <div class="beat dot-field" id="b3"></div>
+  <div class="beat text-line" id="b4"><span class="content"></span><span class="caret"></span></div>
+</div>
+
+<script>
+  const stage = document.getElementById('stage');
+  const b1 = document.getElementById('b1');  // coral dot heartbeat
+  const b2 = document.getElementById('b2');  // "One designer."
+  const b3 = document.getElementById('b3');  // dev dot field (cream cover)
+  const b4 = document.getElementById('b4');  // "A hundred developers."
+
+  // Build dev dot field — brick pattern (every other row offset 50%).
+  // 36 cols × 24 rows = 864 dots. Each dot gets its own random target scale
+  // (1.6–3.2) and growth duration (0.6–1.5s) — so they swell irregularly
+  // and overlap until the cream paper is mostly covered.
+  function buildDotField() {
+    const COLS = 36;
+    const ROWS = 24;
+    for (let r = 0; r < ROWS; r++) {
+      const row = document.createElement('div');
+      row.className = 'dot-row' + (r % 2 === 1 ? ' shifted' : '');
+      for (let c = 0; c < COLS; c++) {
+        const d = document.createElement('div');
+        d.className = 'dev-dot';
+        const scale = 1.6 + Math.random() * 1.6;     // 1.6–3.2
+        const dur   = 0.6 + Math.random() * 0.9;     // 0.6–1.5s
+        d.style.setProperty('--scale', scale.toFixed(2));
+        d.style.setProperty('--dur', dur.toFixed(2) + 's');
+        row.appendChild(d);
+      }
+      b3.appendChild(row);
+    }
+    return Array.from(b3.querySelectorAll('.dev-dot'));
+  }
+  const grayDots = buildDotField();
+
+  function show(el) { el.classList.remove('out'); el.classList.add('in'); }
+  function hide(el) { el.classList.remove('in');  el.classList.add('out'); }
+
+  // ── Type / untype animations ──
+  // typeIn writes characters one by one. typeOut deletes them the same way.
+  function typeIn(beatEl, text, charDelay = 35) {
+    const content = beatEl.querySelector('.content');
+    content.textContent = '';
+    beatEl.classList.add('typing');
+    let i = 0;
+    return new Promise(resolve => {
+      function tick() {
+        if (i < text.length) {
+          content.textContent += text[i++];
+          setTimeout(tick, charDelay + Math.random() * 25);
+        } else {
+          resolve();
+        }
+      }
+      tick();
+    });
+  }
+  function typeOut(beatEl, charDelay = 28) {
+    const content = beatEl.querySelector('.content');
+    return new Promise(resolve => {
+      function tick() {
+        if (content.textContent.length > 0) {
+          content.textContent = content.textContent.slice(0, -1);
+          setTimeout(tick, charDelay);
+        } else {
+          beatEl.classList.remove('typing');
+          resolve();
+        }
+      }
+      tick();
+    });
+  }
+
+  // ── Timeline (scene 01a — cream phase only, ends after "A hundred dev.") ──
+  //  1.5s  — coral dot heartbeat in
+  //  2.7s  — coral dot scales out
+  //  4.5s  — "One designer." types in (~0.6s)
+  //  6.7s  — "One designer." types out (~1.5s read hold)
+  //  7.2s  — dev dot field grows irregularly to cover the cream paper
+  //  10.0s — body.dark added → text color flips to cream
+  //  10.5s — "A hundred developers." types in (~1.1s) on the ink-covered paper
+  //  13.1s — "A hundred developers." types out (~1.5s read hold)
+  //  ~14s  — clean ending; cuts to scene_01b for the dark 3D pulsing beat
+  // ─────────────────────────────────────────────
+
+  setTimeout(() => show(b1), 1500);
+  setTimeout(() => hide(b1), 2700);
+
+  setTimeout(() => typeIn(b2, 'One designer.'),  4500);
+  setTimeout(() => typeOut(b2),                  6700);
+
+  setTimeout(() => {
+    const order = grayDots.slice();
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    order.forEach((d, k) => {
+      const delay = k * 1.5 + Math.random() * 350;
+      setTimeout(() => d.classList.add('in'), delay);
+    });
+  }, 7200);
+
+  setTimeout(() => document.body.classList.add('dark'), 10000);
+
+  setTimeout(() => typeIn(b4, 'A hundred developers.'),  10500);
+  setTimeout(() => typeOut(b4),                          13100);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'r' || e.key === 'R') location.reload();
+    if (e.code === 'Space') { e.preventDefault(); location.href = 'scene_01b_team.html'; }
+  });
+</script>
+
+</body>
+</html>

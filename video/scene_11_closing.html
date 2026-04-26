@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scene 11 — Closing manifesto</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Brygada+1918:ital,wght@0,400..700;1,400..500&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg:        #FAF8F1;
+  --fg-ink:    #121212;
+  --fg-soft:   #6B6560;
+  --coral:     #C9593C;
+  --serif:     'Brygada 1918', 'Iowan Old Style', Georgia, serif;
+  --mono:      'JetBrains Mono', 'SF Mono', Menlo, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100vh; width: 100vw;
+  background: var(--bg);
+  color: var(--fg-ink);
+  font-family: var(--serif);
+  overflow: hidden; cursor: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.stage {
+  position: fixed; inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8vw;
+  gap: 0.4em;
+}
+
+.line {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 5.6vw;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  color: var(--fg-ink);
+  text-align: center;
+}
+.line.accent { color: var(--coral); }
+
+.line .caret {
+  display: none;
+  width: 0.045em;
+  height: 0.85em;
+  background: currentColor;
+  margin-left: 0.06em;
+}
+.typing .caret {
+  display: inline-block;
+  animation: blink 0.85s steps(2) infinite;
+}
+@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+.url {
+  position: fixed;
+  bottom: 5vh;
+  left: 0; right: 0;
+  text-align: center;
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.78vw;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--fg-soft);
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.url.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="line"      id="l1"><span class="content"></span><span class="caret"></span></div>
+  <div class="line accent" id="l2"><span class="content"></span><span class="caret"></span></div>
+</div>
+
+<div class="url" id="url">github.com/speplinski/hackathon-opus-47</div>
+
+<script>
+  const l1  = document.getElementById('l1');
+  const l2  = document.getElementById('l2');
+  const url = document.getElementById('url');
+
+  function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function typeLine(el, text, charDelay = 50, jitter = 20) {
+    const content = el.querySelector('.content');
+    content.textContent = '';
+    el.classList.add('typing');
+    let i = 0;
+    return new Promise(resolve => {
+      function tick() {
+        if (i < text.length) {
+          content.textContent += text[i++];
+          setTimeout(tick, charDelay + Math.random() * jitter);
+        } else {
+          resolve();
+        }
+      }
+      tick();
+    });
+  }
+
+  // ── Closing manifesto, ~5s total. Same DNA as scene_07b / scene_07c
+  //    (typing-driven two-line punch deck), but tightened so the conviction
+  //    lands inside the budget. No typeOut — the lines stay; this is the
+  //    last word. ──
+  //
+  //    timeline:
+  //      0.0s  pre-roll
+  //      0.5s  "Not louder recommendations." types in (~1.0s)
+  //      1.5s  hold
+  //      1.9s  "Better accountability." types in (~0.85s, coral)
+  //      2.75s caret holds on l2
+  //      3.7s  URL fades up below
+  //      ~5s   end
+  async function run() {
+    await wait(500);
+    await typeLine(l1, 'Not louder recommendations.', 26, 20);
+    l1.classList.remove('typing');
+
+    await wait(400);
+    await typeLine(l2, 'Better accountability.', 28, 20);
+
+    await wait(950);
+    url.classList.add('show');
+  }
+
+  run();
+
+  // Last scene — Space loops back to first.
+  document.addEventListener('keydown', e => {
+    if (e.key === 'r' || e.key === 'R') location.reload();
+    if (e.code === 'Space') { e.preventDefault(); location.href = 'scene_01_hook.html'; }
+  });
+</script>
+
+</body>
+</html>

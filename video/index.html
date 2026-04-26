@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Auditable Design — video scenes</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Brygada+1918:ital,wght@0,400..700;1,400..500&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg:      #14130F;
+  --fg:      #EDE8DC;
+  --fg-soft: #8A847A;
+  --coral:   #E17B5D;
+  --rule:    rgba(237, 232, 220, 0.10);
+  --serif:   'Brygada 1918', Georgia, serif;
+  --mono:    'JetBrains Mono', 'SF Mono', Menlo, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--serif);
+  min-height: 100vh;
+  padding: 6vh 8vw;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+h1 {
+  font-style: italic;
+  font-weight: 400;
+  font-size: 3.2rem;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.4em;
+}
+
+.kicker {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.74rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--fg-soft);
+  margin-bottom: 2rem;
+}
+.kicker .num { color: var(--coral); margin-right: 0.6em; }
+
+.lede {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  color: var(--fg-soft);
+  max-width: 640px;
+  margin-bottom: 4rem;
+}
+.lede strong { color: var(--fg); font-weight: 500; font-style: italic; }
+
+ul.scenes {
+  list-style: none;
+  border-top: 1px solid var(--rule);
+}
+ul.scenes li {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px 120px;
+  gap: 2rem;
+  align-items: baseline;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.idx {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.8rem;
+  color: var(--coral);
+  letter-spacing: 0.16em;
+}
+.title {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.8rem;
+  letter-spacing: -0.015em;
+}
+.title a {
+  color: var(--fg);
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule);
+  transition: border-color 0.15s;
+}
+.title a:hover { border-bottom-color: var(--coral); }
+.dur {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--fg-soft);
+  letter-spacing: 0.1em;
+}
+.kind {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--fg-soft);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-align: right;
+}
+.kind.html { color: var(--coral); }
+
+.howto {
+  margin-top: 4rem;
+  padding: 2rem;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  font-size: 0.95rem;
+  color: var(--fg-soft);
+  max-width: 760px;
+}
+.howto h3 {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.74rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--fg);
+  margin-bottom: 1rem;
+}
+.howto ul { padding-left: 1.4rem; line-height: 1.7; }
+.howto kbd {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  background: rgba(237, 232, 220, 0.06);
+  border: 1px solid var(--rule);
+  padding: 1px 7px;
+  border-radius: 3px;
+  color: var(--fg);
+}
+</style>
+</head>
+<body>
+
+<div class="kicker"><span class="num">▸</span>Auditable Design · video assets</div>
+
+<h1>Scene library — v5.7</h1>
+
+<p class="lede">
+  Five standalone HTML scenes, one per typographic block in the script.
+  Each <strong>auto-plays 1.5s after load</strong> — open in fullscreen
+  (F11), start screen recording, hit reload. Press
+  <strong>R</strong> to restart, <strong>Space</strong> to replay
+  the timeline.
+</p>
+
+<ul class="scenes">
+  <li>
+    <span class="idx">01</span>
+    <span class="title"><a href="scene_01_hook.html">Hook</a></span>
+    <span class="dur">~14s</span>
+    <span class="kind html">HTML</span>
+  </li>
+  <li>
+    <span class="idx">01b</span>
+    <span class="title"><a href="scene_01b_team.html">Team grid</a></span>
+    <span class="dur">~7s</span>
+    <span class="kind html">HTML · 3D</span>
+  </li>
+  <li>
+    <span class="idx">02</span>
+    <span class="title"><a href="scene_02_problem.html">Problem cascade</a></span>
+    <span class="dur">~10s</span>
+    <span class="kind html">HTML</span>
+  </li>
+  <li>
+    <span class="idx">02·</span>
+    <span class="title"><a href="scene_02_caption.html">Six weeks later</a></span>
+    <span class="dur">~7s</span>
+    <span class="kind html">HTML · cream</span>
+  </li>
+  <li>
+    <span class="idx">03</span>
+    <span class="title"><a href="scene_03_result.html">The result · Before / Now</a></span>
+    <span class="dur">~8s</span>
+    <span class="kind html">HTML · cream</span>
+  </li>
+  <li>
+    <span class="idx">03·</span>
+    <span class="title"><a href="scene_03_traceable.html">Every claim traceable</a></span>
+    <span class="dur">~7s</span>
+    <span class="kind html">HTML · cream</span>
+  </li>
+  <li>
+    <span class="idx">04</span>
+    <span class="title"><a href="scene_04_pipeline.html">Pipeline overview</a></span>
+    <span class="dur">3s</span>
+    <span class="kind">website · dark</span>
+  </li>
+  <li>
+    <span class="idx">05</span>
+    <span class="title"><a href="scene_05_cluster.html">The cluster</a></span>
+    <span class="dur">20s</span>
+    <span class="kind">website · dark</span>
+  </li>
+  <li>
+    <span class="idx">05b</span>
+    <span class="title"><a href="scene_05b_dissection.html">Layered dissection</a></span>
+    <span class="dur">~12s</span>
+    <span class="kind html">HTML · 3D</span>
+  </li>
+  <li>
+    <span class="idx">05c</span>
+    <span class="title"><a href="scene_05c_pixels.html">Pixel deep dive</a></span>
+    <span class="dur">~7s</span>
+    <span class="kind html">HTML · 3D</span>
+  </li>
+  <li>
+    <span class="idx">06</span>
+    <span class="title"><a href="scene_06_coverage.html">Coverage table</a></span>
+    <span class="dur">~8s</span>
+    <span class="kind html">HTML overlay</span>
+  </li>
+  <li>
+    <span class="idx">07</span>
+    <span class="title"><a href="scene_07_climax.html">Climax · grid scan</a></span>
+    <span class="dur">~7s</span>
+    <span class="kind html">HTML · 3D</span>
+  </li>
+  <li>
+    <span class="idx">07a</span>
+    <span class="title"><a href="scene_07a_compare.html">Side-by-side compare (500 vs 450)</a></span>
+    <span class="dur">~6s</span>
+    <span class="kind html">HTML</span>
+  </li>
+  <li>
+    <span class="idx">07b</span>
+    <span class="title"><a href="scene_07b_copy.html">Same product. Different price.</a></span>
+    <span class="dur">~5s</span>
+    <span class="kind html">HTML · coral</span>
+  </li>
+  <li>
+    <span class="idx">07c</span>
+    <span class="title"><a href="scene_07c_rubric.html">Not reported. Only detected.</a></span>
+    <span class="dur">~5s</span>
+    <span class="kind html">HTML · cream</span>
+  </li>
+  <li>
+    <span class="idx">07d</span>
+    <span class="title"><a href="scene_07d_opus.html">Surfaced by Opus 4.7.</a></span>
+    <span class="dur">~5s</span>
+    <span class="kind html">HTML · coral</span>
+  </li>
+  <li>
+    <span class="idx">08</span>
+    <span class="title"><a href="scene_08_direction.html">The validated direction · Before / After</a></span>
+    <span class="dur">~10s</span>
+    <span class="kind html">HTML · dark</span>
+  </li>
+  <li>
+    <span class="idx">08b</span>
+    <span class="title"><a href="scene_08b_cost.html">Cost · ~$1 per cluster vs tens of thousands</a></span>
+    <span class="dur">~10s</span>
+    <span class="kind html">HTML · cream</span>
+  </li>
+  <li>
+    <span class="idx">09</span>
+    <span class="title"><a href="scene_09_brief.html">The brief</a></span>
+    <span class="dur">~13s</span>
+    <span class="kind html">HTML · 3D · phone+tablet</span>
+  </li>
+  <li>
+    <span class="idx">11</span>
+    <span class="title"><a href="scene_11_closing.html">Closing</a></span>
+    <span class="dur">5s</span>
+    <span class="kind html">HTML</span>
+  </li>
+</ul>
+
+<div class="howto">
+  <h3>Recording workflow</h3>
+  <ul>
+    <li>Open scene in browser → <kbd>F11</kbd> for fullscreen</li>
+    <li>Start ScreenStudio / OBS recording on browser window (1080p60)</li>
+    <li>Reload page (<kbd>Cmd+R</kbd>) — 1.5s pre-roll, then animation auto-plays</li>
+    <li>Stop recording after the scene's full duration + 1s safety</li>
+    <li>In post: cut start to first frame of motion, sync to corresponding voiceover beat</li>
+  </ul>
+  <h3 style="margin-top: 1.5rem;">Signature visual language</h3>
+  <ul>
+    <li>Brygada 1918 italic — same as the website hero</li>
+    <li>Cream <code>#EDE8DC</code> on near-black <code>#14130F</code></li>
+    <li>Clip-path wipe from left, ~1s reveal, cubic-bezier easing</li>
+    <li>Coral <code>#E17B5D</code> as one accent beat per scene — never decorative</li>
+    <li>Hard cuts between scenes in post; never dissolves</li>
+  </ul>
+</div>
+
+</body>
+</html>

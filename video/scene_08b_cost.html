@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scene 08b — Cost (around $1 vs tens of thousands)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Brygada+1918:ital,wght@0,400..700;1,400..500&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg:      #FAF8F1;
+  --fg:      #1F1F1F;
+  --fg-soft: #5A554E;
+  --muted:   #8A847A;
+  --coral:   #C9593C;
+  --serif:   'Brygada 1918', 'Iowan Old Style', Georgia, serif;
+  --mono:    'JetBrains Mono', 'SF Mono', Menlo, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100vh; width: 100vw;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--serif);
+  overflow: hidden; cursor: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.stage {
+  position: fixed; inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0 12vw;
+  gap: 4.4vh;
+}
+
+.block { position: relative; }
+
+/* Kicker — mono uppercase label, the SCENE 08 register
+   (different from 07b's pure-serif punch deck). */
+.kicker {
+  display: flex;
+  align-items: baseline;
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.95vw;
+  line-height: 1;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--fg-soft);
+  margin-bottom: 1.1rem;
+}
+
+/* Figure — large editorial italic, 07b-scale. Coral on the cheap one.
+   Generous line-height so Brygada's deep italic descender on "f" / "p"
+   ("of", "per") isn't clipped. */
+.figure {
+  display: flex;
+  align-items: baseline;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 6vw;
+  line-height: 1.32;
+  letter-spacing: -0.025em;
+  color: var(--fg);
+  padding-bottom: 0.18em;
+}
+.figure.coral { color: var(--coral); }
+
+/* Shared typing caret — display:none default, inline-block while .typing
+   (same fix as 07b/c/d so no ghost artefact remains after typing). */
+.kicker .caret,
+.figure .caret {
+  display: none;
+  width: 0.045em;
+  height: 0.85em;
+  margin-left: 0.06em;
+  background: currentColor;
+}
+.kicker .caret { width: 0.5ch; height: 1em; }
+.typing .caret {
+  display: inline-block;
+  animation: blink 0.85s steps(2) infinite;
+}
+@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <div class="block cheap">
+    <div class="kicker"><span class="content"></span><span class="caret"></span></div>
+    <div class="figure coral"><span class="content"></span><span class="caret"></span></div>
+  </div>
+
+  <div class="block expensive">
+    <div class="kicker"><span class="content"></span><span class="caret"></span></div>
+    <div class="figure"><span class="content"></span><span class="caret"></span></div>
+  </div>
+</div>
+
+<script>
+  // ── Typing helper — same shape as scene_07b_copy / scene_07c_rubric. ──
+  function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function typeLine(el, text, charDelay = 28, jitter = 14) {
+    const content = el.querySelector('.content');
+    content.textContent = '';
+    el.classList.add('typing');
+    let i = 0;
+    return new Promise(resolve => {
+      function tick() {
+        if (i < text.length) {
+          content.textContent += text[i++];
+          setTimeout(tick, charDelay + Math.random() * jitter);
+        } else {
+          resolve();
+        }
+      }
+      tick();
+    });
+  }
+
+  // ── Sequence (timed to VO 3) ──
+  //   VO 3a+b — "Around one dollar per cluster.
+  //              A qualitative study: tens of thousands."   →  ~6s
+  //   VO 3c   — "Orders of magnitude cheaper.
+  //              And traceable."                            →  ~3–4s
+  //
+  //   Inspired by the 07b/c/d punch-deck cadence: a small mono
+  //   kicker grounds the data context, then the figure types in
+  //   as a single italic line. Two blocks; the cheap one is the
+  //   coral punch (one accent per scene). Voice-over reads the
+  //   fuzzy framing aside — figures are the rigorous half.
+  //
+  //   Marks (after 1.5s pre-roll):
+  //     t≈0.0   kicker "Per cluster"
+  //     t≈0.5   figure "around $1"  (coral) — VO "per cluster"
+  //     t≈2.6   kicker "Per qualitative study"
+  //     t≈3.5   figure "tens of thousands"   — VO "thousands"
+  //     t≈5.0   typing complete; frame holds for VO 3c.
+  // ───────────────────────────────────────────────
+  async function run() {
+    await wait(1500);
+
+    const cheap     = document.querySelectorAll('.block.cheap .kicker, .block.cheap .figure');
+    const expensive = document.querySelectorAll('.block.expensive .kicker, .block.expensive .figure');
+
+    // ── Block 1 — VO 3a "Around one dollar per cluster." ──
+    await typeLine(cheap[0], 'Per cluster', 24, 12);
+    cheap[0].classList.remove('typing');
+    await wait(280);
+    await typeLine(cheap[1], 'around $1', 56, 22);
+    cheap[1].classList.remove('typing');
+
+    await wait(1300);
+
+    // ── Block 2 — VO 3b "A qualitative study: tens of thousands." ──
+    await typeLine(expensive[0], 'Per qualitative study', 24, 12);
+    expensive[0].classList.remove('typing');
+    await wait(280);
+    await typeLine(expensive[1], 'tens of thousands', 50, 20);
+    // Last figure keeps its caret blinking through VO 3c, until the cut.
+  }
+
+  run();
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'r' || e.key === 'R') location.reload();
+    if (e.code === 'Space') { e.preventDefault(); location.href = 'scene_09_brief.html'; }
+  });
+</script>
+
+</body>
+</html>

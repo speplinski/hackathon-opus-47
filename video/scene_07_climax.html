@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scene 07 — Climax (3-column brick → match)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Brygada+1918:ital,wght@0,400..700;1,400..500&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg-dark:    #1A1816;
+  --paper:      #FFFDF6;
+  --fg-cream:   #EDE8DC;
+  --coral:      #C9593C;
+  --serif:      'Brygada 1918', Georgia, serif;
+  --mono:       'JetBrains Mono', monospace;
+
+  --ease-in-out: cubic-bezier(0.65, 0.02, 0.18, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100vh; width: 100vw;
+  background: var(--bg-dark);
+  overflow: hidden; cursor: none;
+  -webkit-font-smoothing: antialiased;
+  font-family: var(--serif);
+  color: var(--fg-cream);
+}
+
+.stage {
+  position: fixed; inset: 0;
+  perspective: 2400px;
+  perspective-origin: 50% 45%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ── ONE shared 3D plane that holds all 3 columns. The HUD rotates THIS
+   wrapper, so the whole brick grid stays a single rigid plane. ── */
+.grid-wrap {
+  position: relative;
+  width: 0; height: 0;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  /* IN — dialled in via HUD. */
+  transform: translate(140px, -180px) rotateX(39deg) rotateY(2deg) rotateZ(42deg) scale(1.25);
+  will-change: transform;
+}
+
+/* Each column sits at its own X (and middle col +Y for brick), but all
+   share the wrapper's rotation. */
+.filmstrip {
+  position: absolute;
+  top: 0; left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  transform-style: preserve-3d;
+}
+.filmstrip.col-0 { transform: translate(-50%, -50%) translate(-300px,    0px); }
+.filmstrip.col-1 { transform: translate(-50%, -50%) translate(   0px,  251px); }  /* brick: +half pitch */
+.filmstrip.col-2 { transform: translate(-50%, -50%) translate( 300px,    0px); }
+
+.phone {
+  position: relative;
+  width: 220px;
+  aspect-ratio: 9 / 19.5;
+  background: #1a1a1a;
+  border-radius: 26px;
+  padding: 6px;
+  box-shadow:
+    inset 0 0 0 1.2px rgba(255, 255, 255, 0.08),
+    0 30px 60px rgba(0, 0, 0, 0.55);
+  flex-shrink: 0;
+  transition: opacity 0.7s var(--ease-in-out);
+}
+.phone .screen {
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-color: #0F0E0D;
+}
+.phone.shot-0 .screen { background-image: url('../data/raw/duolingo_screenshots/energy_manage.png'); }
+.phone.shot-1 .screen { background-image: url('../data/raw/duolingo_screenshots/out_of_energy_home.png'); }
+.phone.shot-2 .screen { background-image: url('../data/raw/duolingo_screenshots/out_of_energy_mid_lesson.png'); }
+
+/* Focus phase — non-picked dim. */
+.stage.focused .phone:not(.picked) { opacity: 0.06; }
+
+/* Picked phones light up their entire outline coral — an error signal.
+   Pulsing glow loop while focused. */
+.stage.focused .phone.picked {
+  animation: errorGlow 1.7s var(--ease-in-out) infinite;
+}
+@keyframes errorGlow {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 0 2.5px var(--coral),
+      0 0 24px rgba(201, 89, 60, 0.55),
+      0 0 60px rgba(201, 89, 60, 0.30);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 3.5px var(--coral),
+      0 0 50px rgba(201, 89, 60, 0.85),
+      0 0 110px rgba(201, 89, 60, 0.55);
+  }
+}
+
+/* "≠" between the two outer columns — appears after both targets are revealed. */
+.neq {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 8vw;
+  color: var(--coral);
+  opacity: 0;
+  transition: opacity 0.6s ease, transform 0.7s var(--ease-spring);
+  z-index: 10;
+  text-shadow: 0 0 36px rgba(201, 89, 60, 0.55);
+}
+.neq.in {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+</style>
+</head>
+<body>
+
+<div id="hud" style="display:none;position:fixed;top:20px;left:20px;z-index:99999;font-family:monospace;font-size:13px;font-weight:700;color:#000;background:#FFEB3B;padding:8px 14px;border:2px solid #000;border-radius:4px;pointer-events:none;">HUD</div>
+
+<div class="stage" id="stage">
+  <div class="grid-wrap" id="grid">
+    <div class="filmstrip col-0" id="strip0"></div>
+    <div class="filmstrip col-1" id="strip1"></div>
+    <div class="filmstrip col-2" id="strip2"></div>
+  </div>
+</div>
+
+<script>
+  // ── 3 columns × 30 rows. Picked = row 15. Per-column shot offset
+  // makes all columns satisfy their target at the same `step ≡ 2 mod 3`. ──
+  const TOTAL = 30;
+  const SHOT_COUNT = 3;
+  const PICKED_IDX = 15;
+  // Half pitch (phone height + gap) for the brick offset on col-1.
+  // Phone width 220 × (19.5/9) ≈ 478 + gap 24 = 502 pitch → half = 251.
+  const HALF_PITCH = 251;
+
+  const COLS = [
+    // col-0: energy_manage (shot 0) — pulse on 500-gem Super price
+    { stripId: 'strip0', picked: PICKED_IDX, target: 0, offset: 0,
+      xOffset: -300, yOffset: 0,
+      pulse: { top: 22, left: 28 } },
+    // col-1: placeholder, brick offset (half pitch down)
+    { stripId: 'strip1', picked: -1, target: 1, offset: 1,
+      xOffset: 0, yOffset: HALF_PITCH,
+      pulse: null },
+    // col-2: out_of_energy_mid_lesson (shot 2) — pulse on 450-gem Recharge
+    // Picked one row HIGHER than col-0 (row 14, not 15). Offset=0 keeps the
+    // shot math consistent with col-0 (both stop at step % 3 === 0).
+    { stripId: 'strip2', picked: PICKED_IDX - 1, target: 2, offset: 0,
+      xOffset: 300, yOffset: 0,
+      pulse: { top: 51, left: 56 } },
+  ];
+  const phonesByCol = [];
+
+  COLS.forEach(col => {
+    const strip = document.getElementById(col.stripId);
+    const arr = [];
+    for (let i = 0; i < TOTAL; i++) {
+      const phone = document.createElement('div');
+      phone.className = 'phone shot-' + ((i + col.offset) % SHOT_COUNT) +
+                         (i === col.picked ? ' picked' : '');
+      const screen = document.createElement('div');
+      screen.className = 'screen';
+      phone.appendChild(screen);
+      strip.appendChild(phone);
+      arr.push(phone);
+    }
+    phonesByCol.push(arr);
+  });
+
+  function setShot(phone, shotIdx) {
+    phone.classList.remove('shot-0', 'shot-1', 'shot-2');
+    phone.classList.add('shot-' + shotIdx);
+  }
+
+  // ── Cycle in lock-step across all 3 columns (each with its own offset). ──
+  const CYCLE_INTERVAL = 80;
+  const STOP_AT = 3500;   // 3.5s — STOP and reveal the two markers
+  let step = 0;
+
+  const cycleId = setInterval(() => {
+    step++;
+    COLS.forEach((col, c) => {
+      phonesByCol[c].forEach((phone, i) => {
+        setShot(phone, (i + step + col.offset) % SHOT_COUNT);
+      });
+    });
+  }, CYCLE_INTERVAL);
+
+  // Hard stop at 2.5s — snap each column to its target. With picked=15
+  // and offset=target everywhere, condition is step % 3 === (target - picked) mod 3.
+  // 15%3 = 0, so step ≡ 0 mod 3.
+  setTimeout(() => {
+    clearInterval(cycleId);
+    const targetStep = step + ((0 - (step % SHOT_COUNT) + SHOT_COUNT) % SHOT_COUNT);
+    COLS.forEach((col, c) => {
+      phonesByCol[c].forEach((phone, i) => {
+        setShot(phone, (i + targetStep + col.offset) % SHOT_COUNT);
+      });
+    });
+    // Focus — non-picked phones dim; picked phones light up coral
+    // outline + pulsing glow (error signal).
+    document.getElementById('stage').classList.add('focused');
+  }, STOP_AT);
+
+  // ── Single shared 3D transform on .grid-wrap — rotates the whole
+  // 3-column brick plane as one rigid unit. Per-column X/Y offsets are
+  // hardcoded in CSS (col-0/-1/-2). HUD only controls this wrapper. ──
+  const grid = document.getElementById('grid');
+  const hud  = document.getElementById('hud');
+  let rx = 39, ry = 2, rz = 42, sc = 1.25;
+  let tx = 140, ty = -180;
+
+  function applyTransform() {
+    grid.style.transition = 'none';
+    const t = `translate(${tx}px, ${ty}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale(${sc.toFixed(2)})`;
+    grid.style.transform = t;
+    hud.textContent = t;
+  }
+  applyTransform();
+
+  document.addEventListener('keydown', e => {
+    const TWEAK_KEYS = [
+      'ArrowUp','ArrowDown','ArrowLeft','ArrowRight',
+      'w','W','s','S',
+      'h','H','j','J','k','K','l','L',
+      '+','=','-','_','0'
+    ];
+    if (TWEAK_KEYS.includes(e.key)) {
+      e.preventDefault();
+      switch (e.key) {
+        case 'ArrowUp':    rx -= 2; break;
+        case 'ArrowDown':  rx += 2; break;
+        case 'ArrowLeft':  rz -= 2; break;
+        case 'ArrowRight': rz += 2; break;
+        case 'w': case 'W': ry -= 2; break;
+        case 's': case 'S': ry += 2; break;
+        case 'h': case 'H': tx -= 20; break;
+        case 'l': case 'L': tx += 20; break;
+        case 'k': case 'K': ty -= 20; break;
+        case 'j': case 'J': ty += 20; break;
+        case '+': case '=': sc += 0.05; break;
+        case '-': case '_': sc -= 0.05; break;
+        case '0': rx = 39; ry = 2; rz = 42; sc = 1.25; tx = 140; ty = -180; break;
+      }
+      applyTransform();
+      return;
+    }
+
+    if (e.key === 'r' || e.key === 'R') location.reload();
+    if (e.code === 'Space') { e.preventDefault(); location.href = 'scene_07a_compare.html'; }
+  });
+</script>
+
+</body>
+</html>

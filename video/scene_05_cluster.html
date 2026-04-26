@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scene 05 — Cluster (review grid)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Brygada+1918:ital,wght@0,400..700;1,400..500&family=JetBrains+Mono:wght@300;400;500&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --paper:    #FFFDF6;
+  --ink:      #1F1F1F;
+  --ink-soft: #444;
+  --muted:    #8A847A;
+  --rule:     rgba(0, 0, 0, 0.08);
+  --coral:    #C9593C;
+  --star:     #F6B100;
+  --serif:    'Brygada 1918', Georgia, serif;
+  --sans:     'Inter', -apple-system, sans-serif;
+  --mono:     'JetBrains Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100vh; width: 100vw;
+  overflow: hidden; cursor: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 130% 110% at 100% 0%,
+      #3E3A35 0%,
+      #322F2A 25%,
+      #252220 50%,
+      #14120F 78%,
+      #060503 100%);
+}
+
+.stage {
+  position: fixed; inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 2400px;
+  perspective-origin: 50% 30%;
+}
+
+.grid-wrap {
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  transform: translate(40px, -180px) rotateX(4deg) rotateY(-36deg) rotateZ(4deg) scale(1.45);
+  transition: transform 12s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+}
+.stage.run .grid-wrap {
+  transform: translate(740px, -160px) rotateX(0deg) rotateY(-20deg) rotateZ(2deg) scale(1.45);
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.row {
+  display: flex;
+  gap: 24px;
+}
+.row.shifted { margin-left: 142px; }
+
+.phone {
+  width: 260px;
+  flex-shrink: 0;
+  background: #1a1a1a;
+  padding: 8px;
+  border-radius: 30px;
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.06),
+    0 30px 60px rgba(0, 0, 0, 0.55);
+}
+
+/* Typing — each character fades in individually, scheduled per phone */
+.review-body span { opacity: 0; transition: opacity 0.05s linear; }
+.review-body span.shown { opacity: 1; }
+.review-body span.em {
+  font-weight: 600;
+  color: var(--coral);
+}
+/* Blinking caret effect on the currently-typing phone */
+.review-body.typing::after {
+  content: '▎';
+  color: var(--ink-soft);
+  margin-left: 1px;
+  animation: blink 0.8s steps(2) infinite;
+}
+@keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+
+.review-card {
+  background: var(--paper);
+  border-radius: 24px;
+  padding: 18px 16px 14px;
+  font-family: var(--sans);
+  color: var(--ink);
+}
+.review-head {
+  display: flex; align-items: center; gap: 9px;
+  margin-bottom: 8px;
+}
+.avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  color: var(--paper);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600;
+  flex-shrink: 0;
+}
+.avatar.gray  { background: #6E6B66; }
+.avatar.blue  { background: #4A7BB7; }
+.avatar.green { background: #5A8A6E; }
+.avatar.olive { background: #8A7A4A; }
+.avatar.dark  { background: #3A3835; }
+.avatar.coral { background: #C9593C; }
+.avatar.purple { background: #6E5A8A; }
+.avatar.teal  { background: #4A8A8A; }
+.review-meta { line-height: 1.2; }
+.review-name { font-size: 12px; font-weight: 500; color: var(--ink); }
+.review-date { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.stars {
+  display: inline-flex; gap: 1px;
+  margin: 3px 0 8px;
+}
+.stars span {
+  width: 11px; height: 11px;
+  background: #ddd;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+.stars span.on { background: var(--star); }
+.review-body {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  letter-spacing: -0.005em;
+  margin-bottom: 10px;
+}
+.review-body em { font-weight: 600; color: var(--coral); font-style: normal; background: rgba(201,89,60,0.08); padding: 0 2px; }
+.review-helpful {
+  font-size: 10px;
+  color: var(--muted);
+  border-top: 1px solid var(--rule);
+  padding-top: 8px;
+}
+</style>
+</head>
+<body>
+
+<div id="hud" style="display:none;position:fixed;top:20px;left:20px;z-index:99999;font-family:monospace;font-size:18px;font-weight:700;color:#000;background:#FFEB3B;padding:16px 24px;border:3px solid #000;border-radius:4px;pointer-events:none;">HUD</div>
+
+<div class="stage" id="stage">
+  <div class="grid-wrap">
+    <div class="grid" id="grid"></div>
+  </div>
+</div>
+
+<script>
+  // ── 20 real Duolingo reviews from Google Play ──
+  const REVIEWS = [
+    {n:'Anna', d:'March 25, 2026', av:'coral', i:'A', s:1, t:'Come home from a 5 am shift and the app icon is making weird faces at me. <em>Stop implementing AI.</em>', h:'5'},
+    {n:'Christopher Cashell', d:'March 8, 2026', av:'dark', i:'CC', s:2, t:'Removing the sentence discussions has been a huge loss. <em>Many mistakes leave you confused.</em>', h:'2,007'},
+    {n:'Sierra Walker', d:'March 7, 2026', av:'gray', i:'SW', s:1, t:'Both correct and incorrect answers deduct from energy. <em>Energy always conveniently runs out mid-lesson.</em>', h:'23'},
+    {n:'A Google user', d:'February 16, 2026', av:'olive', i:'G', s:1, t:'This app has spiraled into something I dread. <em>When you fail repeatedly, it doesn\'t make you want to continue.</em>', h:'256'},
+    {n:'Eden Armstrong', d:'February 20, 2026', av:'blue', i:'EA', s:1, t:'The app freezes at install and I\'m <em>about to lose my streak which was almost at 1000 days.</em>', h:'99'},
+    {n:'Raptor Maitre', d:'February 7, 2026', av:'olive', i:'RM', s:1, t:'Almost impossible to complete two lessons without watching ads. <em>2,165 day streak but this makes me want to quit.</em>', h:'1,360'},
+    {n:'David Cervantes', d:'February 20, 2026', av:'dark', i:'DC', s:1, t:'After 7 minutes I ran out of energy. Zero mistakes, 4 ads shown, <em>yet I can\'t continue.</em> Uninstalled.', h:'136'},
+    {n:'Avery', d:'March 2, 2026', av:'coral', i:'AV', s:1, t:'Tried the free trial and cancelled on the last day but they still charged me. <em>I\'m out $100 for a year plan I didn\'t want.</em>', h:'14'},
+    {n:'David Price', d:'February 4, 2026', av:'blue', i:'DP', s:1, t:'The app constantly tries to push Super, with <em>limited energy that is full of bugs</em> — draining or not recharging.', h:'543'},
+    {n:'Kristen Balch', d:'March 10, 2026', av:'purple', i:'KB', s:3, t:'Frustrated with the unwanted and often <em>incorrect autocorrect.</em> Given up on timed challenges.', h:'12'},
+    {n:'Levi shum-gulliksen', d:'February 16, 2026', av:'green', i:'LS', s:1, t:'They removed hearts, replacing it with energy that <em>only lets you do 2 lessons a day or pay.</em> 400+ hours, very disappointed.', h:'111'},
+    {n:'Dracapella Deetz', d:'February 11, 2026', av:'teal', i:'DD', s:2, t:'3 years using this app and the AI aspect made it harder. <em>"Falstaff" refuses my pronunciation</em> of words I\'m saying correctly.', h:'380'},
+    {n:'Miklos Buglyo', d:'February 27, 2026', av:'olive', i:'MB', s:1, t:'Granted double points for 10-15 min, achieve requirements, the same minute disappeared. <em>I want my points back!</em>', h:'18'},
+    {n:'Ricardo Castanon', d:'February 14, 2026', av:'dark', i:'RC', s:3, t:'I don\'t remember using a free app that pushes their subscription as much. <em>The energy system limits how many lessons.</em>', h:'81'},
+    {n:'Jocelyn Clover', d:'February 24, 2026', av:'coral', i:'JC', s:1, t:'ANIMATIONS make the app more laggy. Bugs especially when speaking — <em>failed to detect my voice and skip the lesson.</em>', h:'44'},
+    {n:'Sam Rokeby', d:'November 5, 2025', av:'gray', i:'SR', s:1, t:'The energy system is really counterproductive. <em>It limits how many lessons I can do each day.</em>', h:'3,642'},
+    {n:'Putri Dwi', d:'October 28, 2025', av:'olive', i:'PD', s:1, t:'No matter how many lessons I do, the daily quest will never be fulfilled. <em>I\'d rather uninstall.</em>', h:'2,356'},
+    {n:'J T', d:'October 26, 2025', av:'coral', i:'JT', s:1, t:'Doesn\'t matter if you make no mistakes you still have to watch ads. <em>Charges run out after 1 lesson.</em>', h:'3,139'},
+    {n:'Mike Richardson', d:'November 5, 2025', av:'blue', i:'MR', s:1, t:'The new energy system is weak. <em>You run out of energy even while being correct.</em>', h:'2,765'},
+    {n:'Oleg Safarov', d:'October 26, 2025', av:'dark', i:'OS', s:1, t:'They introduced Energy instead of hearts and it sucks. <em>I can\'t concentrate any more, should constantly watch ads.</em>', h:'1,015'},
+  ];
+
+  const ROWS = 7;
+  const COLS = 15;
+  const REVEAL_DURATION = 12000;
+  const INITIAL_PCT = 0.20;
+
+  const grid = document.getElementById('grid');
+
+  function buildPhone(r) {
+    const stars = Array.from({length: 5}, (_, i) => `<span${i < r.s ? ' class="on"' : ''}></span>`).join('');
+    return `<div class="phone"><div class="review-card">
+      <div class="review-head">
+        <div class="avatar ${r.av}">${r.i}</div>
+        <div class="review-meta"><div class="review-name">${r.n}</div><div class="review-date">${r.d}</div></div>
+      </div>
+      <div class="stars">${stars}</div>
+      <div class="review-body">${r.t}</div>
+      <div class="review-helpful">${r.h} people found this helpful</div>
+    </div></div>`;
+  }
+
+  // Build 15 × 5 grid, alternating shifted rows.
+  for (let row = 0; row < ROWS; row++) {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'row' + (row % 2 === 1 ? ' shifted' : '');
+    let html = '';
+    for (let col = 0; col < COLS; col++) {
+      const review = REVIEWS[Math.floor(Math.random() * REVIEWS.length)];
+      html += buildPhone(review);
+    }
+    rowEl.innerHTML = html;
+    grid.appendChild(rowEl);
+  }
+
+  // Phones are visible from the start. The TEXT inside .review-body types itself —
+  // each phone independently, scheduled across 12s so the grid feels alive
+  // (multiple "people writing reviews" simultaneously).
+  const phones = Array.from(document.querySelectorAll('.phone'));
+
+  phones.forEach(phone => {
+    const body = phone.querySelector('.review-body');
+
+    // Tokenise body innerHTML into a flat list of {char, em?} preserving <em> spans.
+    const tmp = document.createElement('div');
+    tmp.innerHTML = body.innerHTML;
+    const chars = [];
+    function walk(node, isEm) {
+      node.childNodes.forEach(n => {
+        if (n.nodeType === 3) {
+          for (const c of n.textContent) chars.push({ c, em: isEm });
+        } else if (n.nodeName === 'EM') {
+          walk(n, true);
+        } else {
+          walk(n, isEm);
+        }
+      });
+    }
+    walk(tmp, false);
+
+    // Rebuild body with character spans (initially hidden via CSS).
+    body.innerHTML = '';
+    const spans = chars.map(({ c, em }) => {
+      const s = document.createElement('span');
+      s.textContent = c;
+      if (em) s.classList.add('em');
+      body.appendChild(s);
+      return s;
+    });
+
+    // Schedule per-phone: random start (0–6s), random typing speed (1.2–3.5s).
+    // Total finish time spreads up to ~9.5s, with the slowest phones ending around 12s.
+    const startDelay  = Math.random() * 6000;
+    const typeDuration = 1200 + Math.random() * 2300;
+    const charInterval = typeDuration / Math.max(spans.length, 1);
+
+    spans.forEach((s, i) => {
+      setTimeout(() => s.classList.add('shown'), startDelay + i * charInterval);
+    });
+  });
+
+  // ── Stage transform + key controls ──
+  const stage = document.getElementById('stage');
+  const gridWrap = document.querySelector('.grid-wrap');
+  const hud = document.getElementById('hud');
+
+  let rx = 34, ry = 8, rz = -20, sc = 1.05;
+  let tx = 0, ty = 0;
+
+  function applyTransform() {
+    gridWrap.style.transition = 'none';
+    const t = `translate(${tx}px, ${ty}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale(${sc.toFixed(2)})`;
+    gridWrap.style.transform = t;
+    hud.textContent = t;
+    hud.style.opacity = 1;
+  }
+
+  // Show HUD from the start with initial transform values.
+  hud.textContent = `translate(${tx}px, ${ty}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale(${sc.toFixed(2)})`;
+  hud.style.opacity = 1;
+
+  requestAnimationFrame(() => requestAnimationFrame(() => stage.classList.add('run')));
+
+  document.addEventListener('keydown', e => {
+    const TWEAK_KEYS = [
+      'ArrowUp','ArrowDown','ArrowLeft','ArrowRight',
+      'w','W','s','S',
+      'h','H','j','J','k','K','l','L',
+      '+','=','-','_','0'
+    ];
+    if (TWEAK_KEYS.includes(e.key)) {
+      e.preventDefault();
+      switch (e.key) {
+        case 'ArrowUp':    rx -= 2; break;
+        case 'ArrowDown':  rx += 2; break;
+        case 'ArrowLeft':  rz -= 2; break;
+        case 'ArrowRight': rz += 2; break;
+        case 'w': case 'W': ry -= 2; break;
+        case 's': case 'S': ry += 2; break;
+        case 'h': case 'H': tx -= 20; break;
+        case 'l': case 'L': tx += 20; break;
+        case 'k': case 'K': ty -= 20; break;
+        case 'j': case 'J': ty += 20; break;
+        case '+': case '=': sc += 0.05; break;
+        case '-': case '_': sc -= 0.05; break;
+        case '0': rx = 34; ry = 8; rz = -20; sc = 1.05; tx = 0; ty = 0; break;
+      }
+      applyTransform();
+      return;
+    }
+
+    if (e.key === 'r' || e.key === 'R') location.reload();
+    if (e.code === 'Space') { e.preventDefault(); location.href = 'scene_05b_dissection.html'; }
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scene 05b — Layered dissection</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Brygada+1918:ital,wght@0,400..700;1,400..500&family=JetBrains+Mono:wght@300;400;500&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --paper:    #FFFDF6;
+  --ink:      #1F1F1F;
+  --ink-soft: #444;
+  --muted:    #8A847A;
+  --rule:     rgba(0, 0, 0, 0.08);
+  --coral:    #C9593C;
+  --coral-soft: rgba(201, 89, 60, 0.16);
+  --star:     #F6B100;
+  --serif:    'Brygada 1918', Georgia, serif;
+  --sans:     'Inter', -apple-system, sans-serif;
+  --mono:     'JetBrains Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100vh; width: 100vw;
+  overflow: hidden; cursor: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 130% 110% at 100% 0%,
+      #3E3A35 0%,
+      #322F2A 25%,
+      #252220 50%,
+      #14120F 78%,
+      #060503 100%);
+}
+
+.stage {
+  position: fixed; inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 2000px;
+  perspective-origin: 50% 55%;
+}
+
+/* Whole world tilts — phone lies flat, slices rise above it.
+   Slow drift START → END across the scene: rotateZ unwinds (-25 → -15),
+   scale eases in (2.10 → 2.25), Y drops slightly (260 → 300).
+   Sells the dissection — viewer leans in as layers separate. */
+.world {
+  transform-style: preserve-3d;
+  transform: translate(100px, 260px) rotateX(50deg) rotateY(6deg) rotateZ(-25deg) scale(2.10);
+  position: relative;
+  width: 480px;
+  height: 580px;
+  transition: transform 11s linear;
+  will-change: transform;
+}
+.stage.run .world {
+  transform: translate(100px, 300px) rotateX(50deg) rotateY(6deg) rotateZ(-15deg) scale(2.25);
+}
+
+/* ── BASE: phone with full review, lying on the table ── */
+.phone {
+  position: absolute;
+  top: 0; left: 0;
+  width: 480px;
+  background: #1a1a1a;
+  padding: 12px;
+  border-radius: 38px;
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.08),
+    0 60px 100px rgba(0, 0, 0, 0.7);
+  transform: translateZ(0);
+}
+
+.review-card {
+  background: var(--paper);
+  border-radius: 30px;
+  padding: 26px 24px 20px;
+  font-family: var(--sans);
+  color: var(--ink);
+}
+.review-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.avatar {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: #6E6B66;
+  color: var(--paper);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600;
+}
+.review-name { font-size: 14px; font-weight: 500; }
+.review-date { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.stars { display: inline-flex; gap: 2px; margin: 4px 0 12px; }
+.stars span {
+  width: 13px; height: 13px;
+  background: #ddd;
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+.stars span.on { background: var(--star); }
+.review-body {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  position: relative;
+}
+.review-body em.frag {
+  font-weight: 600;
+  color: var(--coral);
+  font-style: normal;
+}
+/* Two-layer trick — ghost reserves the final height so the layout below
+   doesn't jump as new lines wrap in. Typed layer paints over identically. */
+.review-body .ghost {
+  visibility: hidden;
+}
+.review-body .typed {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+}
+.review-helpful {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ── SLICES: extracted fragments, each lifts above the phone ──
+   Each slice = a paper "shaving" of the review with one fragment
+   and its structural label. Sized to its content (compact pills). */
+.slice {
+  position: absolute;
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 10px 18px 12px;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.55);
+  font-family: var(--sans);
+  border-left: 2.5px solid var(--coral);
+
+  opacity: 0;
+  transform: translateZ(0);
+  transition:
+    opacity 0.9s ease,
+    transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.slice-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--coral);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.slice-label .arr { margin-right: 0.5em; }
+.slice-text {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 17px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.slice-text.mono {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+/* WHERE — covers the longer phrase, sits ~110px above the phone surface */
+.slice.where {
+  top: 80px;
+  left: 30px;
+  width: 380px;
+}
+.slice.where.lifted {
+  opacity: 1;
+  transform: translate3d(-10px, -20px, 110px);
+}
+
+/* SURFACE — short pill, sits higher (~210px) */
+.slice.surface {
+  top: 70px;
+  left: 60px;
+  width: 220px;
+}
+.slice.surface.lifted {
+  opacity: 1;
+  transform: translate3d(-30px, -40px, 210px);
+}
+
+/* PRINCIPLE — the apex tag, mono code-style, highest above (~310px) */
+.slice.principle {
+  top: 60px;
+  left: 80px;
+  width: 320px;
+}
+.slice.principle.lifted {
+  opacity: 1;
+  transform: translate3d(-50px, -60px, 310px);
+}
+
+/* Caret — blinks at the typing position inside the review body. */
+.review-body .caret {
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+  background: var(--ink-soft);
+  vertical-align: -2px;
+  margin-left: 1px;
+  animation: blink 0.9s steps(2, end) infinite;
+}
+.review-body.done .caret { display: none; }
+@keyframes blink { 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<div id="hud" style="display:none;position:fixed;top:20px;left:20px;z-index:99999;font-family:monospace;font-size:18px;font-weight:700;color:#000;background:#FFEB3B;padding:16px 24px;border:3px solid #000;border-radius:4px;pointer-events:none;">HUD: translate(0px, 0px) rotateX(52deg) rotateY(-6deg) rotateZ(-1deg) scale(1.05)</div>
+
+<div class="stage" id="stage">
+  <div class="world">
+
+    <!-- BASE: phone with the full review -->
+    <div class="phone">
+      <div class="review-card">
+        <div class="review-head">
+          <div class="avatar">SW</div>
+          <div>
+            <div class="review-name">Sierra Walker</div>
+            <div class="review-date">March 7, 2026</div>
+          </div>
+        </div>
+        <div class="stars"><span class="on"></span><span></span><span></span><span></span><span></span></div>
+        <div class="review-body" id="reviewBody"><div class="ghost" aria-hidden="true">The new energy system is terrible. Both correct and incorrect answers deduct from <em class="frag">your energy</em>. <em class="frag">Energy always conveniently runs out mid-lesson</em>. When I watch ads to earn energy, the entire ad plays and I never get awarded my energy.</div><div class="typed"><span class="seg" data-text="The new energy system is terrible. Both correct and incorrect answers deduct from "></span><em class="frag seg" data-text="your energy"></em><span class="seg" data-text=". "></span><em class="frag seg" data-text="Energy always conveniently runs out mid-lesson" data-trigger="midLesson"></em><span class="seg" data-text=". When I watch ads to earn energy, the entire ad plays and I never get awarded my energy."></span><span class="caret"></span></div></div>
+        <div class="review-helpful">247 people found this helpful</div>
+      </div>
+    </div>
+
+    <!-- SLICES — each fragment lifts to its own height -->
+
+    <div class="slice where">
+      <div class="slice-label"><span class="arr">▸</span>Where</div>
+      <div class="slice-text">Energy always conveniently runs out mid-lesson</div>
+    </div>
+
+    <div class="slice surface">
+      <div class="slice-label"><span class="arr">▸</span>Surface</div>
+      <div class="slice-text">your energy</div>
+    </div>
+
+    <div class="slice principle">
+      <div class="slice-label"><span class="arr">▸</span>Principle</div>
+      <div class="slice-text mono">monetisation_interrupts_value</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const stage = document.getElementById('stage');
+  const world = document.querySelector('.world');
+  const hud   = document.getElementById('hud');
+
+  let rx = 52, ry = -6, rz = -1, sc = 1.05;
+  let tx = 0, ty = 0;
+
+  function applyTransform() {
+    world.style.transition = 'none';
+    const t = `translate(${tx}px, ${ty}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale(${sc.toFixed(2)})`;
+    world.style.transform = t;
+    hud.textContent = t;
+    hud.style.display = 'block';
+  }
+
+  // ── Typing animation ──
+  // Walk through pre-defined segments (plain + <em class="frag">), typing
+  // one char at a time. When the "mid-lesson" fragment finishes, slices lift.
+  const segs        = document.querySelectorAll('#reviewBody .seg');
+  const reviewBody  = document.getElementById('reviewBody');
+
+  const charDelay   = 35;     // ms per character
+  const startDelay  = 800;    // ms before typing kicks in
+
+  // Slice reveal — staggered after the trigger fires.
+  function revealSlices() {
+    document.querySelector('.slice.where').classList.add('lifted');
+    setTimeout(() => document.querySelector('.slice.surface').classList.add('lifted'), 1100);
+    setTimeout(() => document.querySelector('.slice.principle').classList.add('lifted'), 2200);
+  }
+
+  // Type one char at a time across segments.
+  let segIdx = 0, charIdx = 0;
+  function typeNext() {
+    if (segIdx >= segs.length) {
+      reviewBody.classList.add('done');
+      return;
+    }
+    const seg = segs[segIdx];
+    const text = seg.dataset.text;
+    if (charIdx < text.length) {
+      seg.textContent += text[charIdx];
+      charIdx++;
+      setTimeout(typeNext, charDelay);
+    } else {
+      if (seg.dataset.trigger === 'midLesson') revealSlices();
+      segIdx++;
+      charIdx = 0;
+      typeNext();
+    }
+  }
+  setTimeout(typeNext, startDelay);
+
+  requestAnimationFrame(() => requestAnimationFrame(() => stage.classList.add('run')));
+
+  document.addEventListener('keydown', e => {
+    const TWEAK_KEYS = [
+      'ArrowUp','ArrowDown','ArrowLeft','ArrowRight',
+      'w','W','s','S',
+      'h','H','j','J','k','K','l','L',
+      '+','=','-','_','0'
+    ];
+    if (TWEAK_KEYS.includes(e.key)) {
+      e.preventDefault();
+      switch (e.key) {
+        case 'ArrowUp':    rx -= 2; break;
+        case 'ArrowDown':  rx += 2; break;
+        case 'ArrowLeft':  rz -= 2; break;
+        case 'ArrowRight': rz += 2; break;
+        case 'w': case 'W': ry -= 2; break;
+        case 's': case 'S': ry += 2; break;
+        case 'h': case 'H': tx -= 20; break;
+        case 'l': case 'L': tx += 20; break;
+        case 'k': case 'K': ty -= 20; break;
+        case 'j': case 'J': ty += 20; break;
+        case '+': case '=': sc += 0.05; break;
+        case '-': case '_': sc -= 0.05; break;
+        case '0': rx = 52; ry = -6; rz = -1; sc = 1.05; tx = 0; ty = 0; break;
+      }
+      applyTransform();
+      return;
+    }
+
+    if (e.key === 'r' || e.key === 'R') location.reload();
+    if (e.code === 'Space') { e.preventDefault(); location.href = 'scene_05c_pixels.html'; }
+  });
+</script>
+
+</body>
+</html>

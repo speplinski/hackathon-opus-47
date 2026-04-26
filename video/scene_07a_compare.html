@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scene 07a — Side-by-side compare (500 vs 450)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Brygada+1918:ital,wght@0,400..700;1,400..500&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg-dark:   #1A1816;
+  --paper:     #FFFDF6;
+  --fg-cream:  #EDE8DC;
+  --fg-soft:   #BAB4A6;
+  --coral:     #C9593C;
+  --serif:     'Brygada 1918', Georgia, serif;
+  --mono:      'JetBrains Mono', monospace;
+
+  --ease-in-out: cubic-bezier(0.65, 0.02, 0.18, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100vh; width: 100vw;
+  background: var(--bg-dark);
+  overflow: hidden; cursor: none;
+  -webkit-font-smoothing: antialiased;
+  font-family: var(--serif);
+  color: var(--fg-cream);
+}
+
+.stage {
+  position: fixed; inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8vw;
+}
+
+/* ── Two phones side by side, full screenshots, coral outline glow
+   continuing the "error" register from scene_07. ── */
+.phone {
+  position: relative;
+  /* Same height for both phones; width auto-derived from aspect-ratio.
+     Heights match perfectly side-by-side; widths differ by ~3% (invisible). */
+  height: 78vh;
+  max-height: 820px;
+  background: #1a1a1a;
+  border-radius: 30px;
+  padding: 8px;
+  flex-shrink: 0;
+  opacity: 0;
+  transform: scale(0.96);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  transition:
+    opacity 0.7s var(--ease-in-out),
+    transform 0.8s var(--ease-spring);
+}
+/* Each phone matches the aspect of its own screenshot →
+   cover fills with no crop, no letterbox.
+   energy_manage      = 1080×2340 (0.4615)
+   out_of_energy_home = 1080×2400 (0.4500) */
+.phone.left  { aspect-ratio: 1080 / 2340; }
+.phone.right { aspect-ratio: 1080 / 2400; }
+.phone.in {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.phone .screen {
+  width: 100%;
+  height: 100%;
+  border-radius: 22px;
+  /* cover fills the screen completely; with matched aspect-ratio above the
+     image fits edge-to-edge with no letterbox gap. */
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-color: #0F0E0D;
+  position: relative;
+  overflow: hidden;
+}
+.phone.left  .screen { background-image: url('../data/raw/duolingo_screenshots/energy_manage.png'); }
+.phone.right .screen { background-image: url('../data/raw/duolingo_screenshots/out_of_energy_home.png'); }
+
+/* ── Highlight rectangle precisely around the price element on each screen.
+   Pulses coral while visible (the only "error" signal — phone outlines stay
+   neutral). ── */
+.highlight {
+  position: absolute;
+  border: 2px solid var(--coral);
+  background: rgba(201, 89, 60, 0.10);
+  border-radius: 10px;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(1.05);
+  transition: opacity 0.5s ease, transform 0.6s var(--ease-spring);
+  z-index: 4;
+  box-shadow: 0 0 18px rgba(201, 89, 60, 0.45);
+}
+.highlight.in {
+  opacity: 1;
+  transform: scale(1);
+  animation: highlightPulse 1.7s var(--ease-in-out) 0.6s infinite;
+}
+@keyframes highlightPulse {
+  0%, 100% {
+    border-width: 2px;
+    background: rgba(201, 89, 60, 0.10);
+    box-shadow: 0 0 14px rgba(201, 89, 60, 0.40);
+  }
+  50% {
+    border-width: 3px;
+    background: rgba(201, 89, 60, 0.22);
+    box-shadow: 0 0 28px rgba(201, 89, 60, 0.75);
+  }
+}
+
+/* Left phone — wide horizontal bar (Recharge 500 row in Energy manage). */
+.highlight.h-left {
+  top: 39.8%; left: 2.5%; right: 2.9%;
+  height: 6.8%;
+}
+/* Right phone — Recharge 450 card in the paywall modal. */
+.highlight.h-right {
+  top: 55.3%; left: 52%; width: 45.2%; height: 24.1%;
+  border-radius: 14px;
+}
+
+/* ── Number callouts — extracted price floating beside each phone. ── */
+.callout {
+  position: absolute;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 5.5vw;
+  color: var(--coral);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.6s ease, transform 0.7s var(--ease-spring);
+  display: flex;
+  align-items: baseline;
+  z-index: 6;
+}
+.callout.in { opacity: 1; transform: translateY(0); }
+
+.callout .unit {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 1.2vw;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--coral);
+  margin-left: 0.4em;
+  font-weight: 500;
+  align-self: center;
+}
+
+.callout.left  { top: 50%; left:  6vw; transform: translateY(-50%) scale(1.35); }
+.callout.right { top: 50%; right: 6vw; transform: translateY(-50%) scale(1.35); }
+.callout.left.in,
+.callout.right.in {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+.callout {
+  transition:
+    opacity 0.55s var(--ease-in-out),
+    transform 0.85s var(--ease-spring);
+}
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="callout left" id="calloutL"><span class="num" data-final="500">0</span><span class="unit">gems</span></div>
+
+  <div class="phone left" id="phoneL">
+    <div class="screen">
+      <div class="highlight h-left" id="hlL"></div>
+    </div>
+  </div>
+
+  <div class="phone right" id="phoneR">
+    <div class="screen">
+      <div class="highlight h-right" id="hlR"></div>
+    </div>
+  </div>
+
+  <div class="callout right" id="calloutR"><span class="num" data-final="450">0</span><span class="unit">gems</span></div>
+</div>
+
+<script>
+  const phoneL    = document.getElementById('phoneL');
+  const phoneR    = document.getElementById('phoneR');
+  const hlL       = document.getElementById('hlL');
+  const hlR       = document.getElementById('hlR');
+  const calloutL  = document.getElementById('calloutL');
+  const calloutR  = document.getElementById('calloutR');
+
+  function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // Counter — ticks the number up from 0 to its data-final value with
+  // ease-out, signalling "extracted from pixels".
+  function tickCounter(calloutEl, duration = 900) {
+    const numEl = calloutEl.querySelector('.num');
+    const finalVal = parseInt(numEl.dataset.final, 10);
+    const start = performance.now();
+    function tick(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);   // easeOutCubic
+      numEl.textContent = Math.floor(finalVal * eased);
+      if (t < 1) requestAnimationFrame(tick);
+      else numEl.textContent = finalVal;
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // ── Sequence (~5.5s total) ──
+  // 0.5s — phones fade in (neutral, no glow)
+  // 1.8s — left highlight box pulses coral around Recharge 500 row
+  // 2.2s — left "500 gems" callout extracts
+  // 2.8s — right highlight box pulses coral around Recharge 450 card
+  // 3.2s — right "450 gems" callout extracts
+  // 5.0s+ — hold / cut to scene 07b
+  async function run() {
+    await wait(500);
+    phoneL.classList.add('in');
+    phoneR.classList.add('in');
+
+    await wait(1300);
+    hlL.classList.add('in');
+    await wait(400);
+    calloutL.classList.add('in');         // scale-down + fade-in
+    tickCounter(calloutL);                 // 0 → 500 (~0.9s)
+
+    // Counter lands at ~0.9s. Hold a full 1s after that before starting 450.
+    await wait(1900);
+    hlR.classList.add('in');
+    await wait(400);
+    calloutR.classList.add('in');
+    tickCounter(calloutR);                 // 0 → 450
+  }
+
+  run();
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'r' || e.key === 'R') location.reload();
+    if (e.code === 'Space') { e.preventDefault(); location.href = 'scene_07b_copy.html'; }
+  });
+</script>
+
+</body>
+</html>

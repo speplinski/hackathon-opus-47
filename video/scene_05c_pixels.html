@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scene 05c — Pixel deep dive (column setup)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Brygada+1918:ital,wght@0,400..700;1,400..500&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg-dark:   #0E0E0E;
+  --paper:     #FFFDF6;
+  --paper-2:   #EAE5D2;
+  --paper-3:   #D4CFB8;
+  --soft:      #BAB4A6;
+  --muted:     #6B6560;
+  --dark-2:    #2A2826;
+  --coral:     #C9593C;
+  --green:     #5A8A6E;
+  --amber:     #B88A2A;
+  --serif:     'Brygada 1918', Georgia, serif;
+  --mono:      'JetBrains Mono', monospace;
+
+  --ease-in-out: cubic-bezier(0.65, 0.02, 0.18, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100vh; width: 100vw;
+  background: var(--bg-dark);
+  overflow: hidden; cursor: none;
+  -webkit-font-smoothing: antialiased;
+  font-family: var(--serif);
+  color: var(--paper);
+}
+
+.stage {
+  position: fixed; inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 2400px;
+  perspective-origin: 50% 45%;
+}
+
+/* ── Column of 50 phones in 1 column at the IN transform.
+   Phones DON'T move — instead, each phone's screen image cycles rapidly
+   through the 3 real Duolingo screenshots in sequence. ── */
+.filmstrip {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  /* IN — start position dialled in via HUD. */
+  transform: translate(-560px, -180px) rotateX(50deg) rotateY(-10deg) rotateZ(-32deg) scale(1.35);
+  will-change: transform;
+}
+
+.phone {
+  width: 220px;
+  aspect-ratio: 9 / 19.5;
+  background: #1a1a1a;
+  border-radius: 26px;
+  padding: 6px;
+  box-shadow:
+    inset 0 0 0 1.2px rgba(255, 255, 255, 0.08),
+    0 30px 60px rgba(0, 0, 0, 0.55);
+  flex-shrink: 0;
+  transition: opacity 0.7s var(--ease-in-out);
+}
+.phone .screen {
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  /* Dark placeholder — when no image is loaded yet, the screen reads as
+     a turned-off dark phone, not a bright cream rectangle. */
+  background-color: #0F0E0D;
+}
+
+/* Three shot classes — toggling these on a phone changes the screenshot. */
+.phone.shot-0 .screen { background-image: url('../data/raw/duolingo_screenshots/energy_manage.png'); }
+.phone.shot-1 .screen { background-image: url('../data/raw/duolingo_screenshots/out_of_energy_home.png'); }
+.phone.shot-2 .screen { background-image: url('../data/raw/duolingo_screenshots/out_of_energy_mid_lesson.png'); }
+
+/* During the focus phase, only the picked phone stays bright — others dim. */
+.stage.focused .phone:not(.picked) { opacity: 0.06; }
+
+/* ── Hypotheses panel — anchored right, hidden until JS toggles it. ── */
+.hypotheses {
+  position: absolute;
+  top: 50%;
+  right: 6vw;
+  transform: translateY(-50%);
+  width: 42vw;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  z-index: 50;
+}
+.hypotheses.in { opacity: 1; }
+
+.hyp-header {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--soft);
+  margin-bottom: 0.7rem;
+  font-weight: 500;
+}
+
+.hyp {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: opacity 0.4s ease, transform 0.5s var(--ease-spring);
+}
+.hyp.in { opacity: 1; transform: translateX(0); }
+
+/* ── Badge: empty circle (task) → fills + shows verdict glyph (checked). ── */
+.hyp .badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.8px solid var(--soft);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 600;
+  color: transparent;
+  flex-shrink: 0;
+  transition:
+    border-color 0.35s ease,
+    background-color 0.35s ease,
+    color 0.35s ease,
+    box-shadow 0.35s ease,
+    transform 0.4s var(--ease-spring);
+}
+.hyp.checked .badge {
+  border-color: transparent;
+  color: var(--paper);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  transform: scale(1.04);
+}
+.hyp.confirmed.checked .badge { background: var(--green); }
+.hyp.partial.checked   .badge { background: var(--amber); }
+.hyp.refuted.checked   .badge { background: var(--coral); }
+
+/* ── Line — italic editorial type with caret while typing. ── */
+.hyp .line {
+  display: flex;
+  align-items: baseline;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 2.1vw;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--paper);
+  transition: color 0.35s ease, text-decoration-color 0.35s ease;
+}
+
+.hyp .caret {
+  display: inline-block;
+  width: 0.045em;
+  height: 0.85em;
+  background: var(--paper);
+  margin-left: 0.06em;
+  opacity: 0;
+}
+.hyp .line.typing .caret { animation: blink 0.85s steps(2) infinite; }
+@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+/* Refuted line gets struck through only after it's checked (verdict given). */
+.hyp.refuted.checked .line {
+  text-decoration: line-through;
+  text-decoration-color: var(--coral);
+  text-decoration-thickness: 1.5px;
+  color: var(--soft);
+}
+</style>
+</head>
+<body>
+
+<div id="hud" style="display:none;position:fixed;top:20px;left:20px;z-index:99999;font-family:monospace;font-size:14px;font-weight:700;color:#000;background:#FFEB3B;padding:10px 16px;border:2px solid #000;border-radius:4px;pointer-events:none;">HUD</div>
+
+<div class="stage" id="stage">
+  <div class="filmstrip" id="strip">
+    <!-- 50 phones in 1 column — JS builds them. Picked = index 25. -->
+  </div>
+
+  <div class="hypotheses" id="hyp">
+    <div class="hyp-header">▸ checking pixels</div>
+    <div class="hyp confirmed" data-text="Energy runs out mid-lesson">
+      <div class="badge">✓</div>
+      <div class="line"><span class="content"></span><span class="caret"></span></div>
+    </div>
+    <div class="hyp confirmed" data-text="Streak loss reframed as paywall">
+      <div class="badge">✓</div>
+      <div class="line"><span class="content"></span><span class="caret"></span></div>
+    </div>
+    <div class="hyp partial" data-text="Pre-checked Super by default">
+      <div class="badge">◐</div>
+      <div class="line"><span class="content"></span><span class="caret"></span></div>
+    </div>
+    <div class="hyp refuted" data-text="Free option to continue lesson">
+      <div class="badge">✕</div>
+      <div class="line"><span class="content"></span><span class="caret"></span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const strip = document.getElementById('strip');
+  const hud   = document.getElementById('hud');
+
+  // ── Build 50 phones in column. Each phone gets one of 3 shot classes
+  // initially, offset by index. Index 25 = picked. ──
+  const TOTAL = 50;
+  const PICKED_IDX = 25;
+  const SHOT_COUNT = 3;
+  const phones = [];
+
+  for (let i = 0; i < TOTAL; i++) {
+    const phone = document.createElement('div');
+    phone.className = 'phone shot-' + (i % SHOT_COUNT) + (i === PICKED_IDX ? ' picked' : '');
+    const screen = document.createElement('div');
+    screen.className = 'screen';
+    phone.appendChild(screen);
+    strip.appendChild(phone);
+    phones.push(phone);
+  }
+
+  // ── Timeline (fixed wall-clock targets) ──
+  //  0:00  — start: cycle phones (1→2→3→1…)
+  //  2:00  — STOP cycle + .focused (others dim ~0.7s)
+  //  2:75  — panel header on (after focus settles)
+  //  3:00  — Energy verdict (slide + type + check)
+  //  4:00  — Streak verdict
+  //  5:00  — Pre-checked Super verdict
+  //  6:00  — Free option verdict
+  //  7:00  — all done
+  // ─────────────────────────────────────────────
+  const CYCLE_INTERVAL = 80;
+  const STOP_AT       = 2000;   // cycle stops at exactly 2s
+  const ITEM_TIMES    = [3000, 4000, 5000, 6000];
+
+  let step = 0;
+  const cycleId = setInterval(() => {
+    step++;
+    phones.forEach((phone, i) => {
+      const shotIdx = (i + step) % SHOT_COUNT;
+      phone.classList.remove('shot-0', 'shot-1', 'shot-2');
+      phone.classList.add('shot-' + shotIdx);
+    });
+  }, CYCLE_INTERVAL);
+
+  // Hard stop at 3s — clamp picked phone to shot-2 by snapping the WHOLE
+  // strip to a step where (PICKED_IDX + step) % 3 === 2 (sequence preserved).
+  // Then focus runs for ~700ms (others dim). Only AFTER focus settles does
+  // the panel header come on; typing kicks in at the scheduled 4s mark.
+  setTimeout(() => {
+    clearInterval(cycleId);
+    const target = step + ((2 - ((PICKED_IDX + step) % SHOT_COUNT) + SHOT_COUNT) % SHOT_COUNT);
+    phones.forEach((phone, i) => {
+      const shotIdx = (i + target) % SHOT_COUNT;
+      phone.classList.remove('shot-0', 'shot-1', 'shot-2');
+      phone.classList.add('shot-' + shotIdx);
+    });
+    document.getElementById('stage').classList.add('focused');
+    // Wait for the focus transition to complete before showing the panel.
+    setTimeout(() => document.getElementById('hyp').classList.add('in'), 750);
+  }, STOP_AT);
+
+  // ── Reveal hypotheses one by one — empty circle → text types → checked.
+  // Each verdict is scheduled at its absolute wall-clock time. ──
+  function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function typeLine(lineEl, text, charDelay = 16, jitter = 12) {
+    const content = lineEl.querySelector('.content');
+    content.textContent = '';
+    lineEl.classList.add('typing');
+    let i = 0;
+    return new Promise(resolve => {
+      function tick() {
+        if (i < text.length) {
+          content.textContent += text[i++];
+          setTimeout(tick, charDelay + Math.random() * jitter);
+        } else {
+          resolve();
+        }
+      }
+      tick();
+    });
+  }
+
+  async function revealItem(item) {
+    item.classList.add('in');                  // slide in
+    await wait(60);
+    const line = item.querySelector('.line');
+    await typeLine(line, item.dataset.text);   // type fast
+    line.classList.remove('typing');           // stop caret
+    await wait(80);
+    item.classList.add('checked');             // empty circle → verdict
+  }
+
+  // Schedule each verdict at its exact wall-clock time.
+  const items = Array.from(document.querySelectorAll('.hyp'));
+  ITEM_TIMES.forEach((t, i) => {
+    setTimeout(() => revealItem(items[i]), t);
+  });
+
+  // ── HUD + arrow-key controls for live transform tweaking. ──
+  let rx = 50, ry = -10, rz = -32, sc = 1.35;
+  let tx = -560, ty = -180;
+
+  function applyTransform() {
+    strip.style.transition = 'none';
+    const t = `translate(${tx}px, ${ty}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale(${sc.toFixed(2)})`;
+    strip.style.transform = t;
+    hud.textContent = t;
+  }
+  applyTransform();
+
+  document.addEventListener('keydown', e => {
+    const TWEAK_KEYS = [
+      'ArrowUp','ArrowDown','ArrowLeft','ArrowRight',
+      'w','W','s','S',
+      'h','H','j','J','k','K','l','L',
+      '+','=','-','_','0'
+    ];
+    if (TWEAK_KEYS.includes(e.key)) {
+      e.preventDefault();
+      switch (e.key) {
+        case 'ArrowUp':    rx -= 2; break;
+        case 'ArrowDown':  rx += 2; break;
+        case 'ArrowLeft':  rz -= 2; break;
+        case 'ArrowRight': rz += 2; break;
+        case 'w': case 'W': ry -= 2; break;
+        case 's': case 'S': ry += 2; break;
+        case 'h': case 'H': tx -= 20; break;
+        case 'l': case 'L': tx += 20; break;
+        case 'k': case 'K': ty -= 20; break;
+        case 'j': case 'J': ty += 20; break;
+        case '+': case '=': sc += 0.05; break;
+        case '-': case '_': sc -= 0.05; break;
+        case '0': rx = 50; ry = -10; rz = -32; sc = 1.35; tx = -560; ty = -180; break;
+      }
+      applyTransform();
+      return;
+    }
+
+    if (e.key === 'r' || e.key === 'R') location.reload();
+    if (e.code === 'Space') { e.preventDefault(); location.href = 'scene_06_coverage.html'; }
+  });
+</script>
+
+</body>
+</html>

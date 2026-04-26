@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scene 07d — Surfaced by Opus 4.7.</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Brygada+1918:ital,wght@0,400..700;1,400..500&display=swap');
+
+:root {
+  --bg:        #C9593C;
+  --fg-cream:  #FAF8F1;
+  --punch:     #2A0A0E;
+  --serif:     'Brygada 1918', 'Iowan Old Style', Georgia, serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100vh; width: 100vw;
+  background: var(--bg);
+  color: var(--fg-cream);
+  font-family: var(--serif);
+  overflow: hidden; cursor: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.stage {
+  position: fixed; inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8vw;
+}
+
+.line {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 6.6vw;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+  color: var(--fg-cream);
+  text-align: center;
+  flex-wrap: wrap;
+}
+.line .content em.k {
+  color: var(--punch);
+  font-style: italic;
+  font-weight: 500;
+}
+
+.line .caret {
+  display: none;
+  width: 0.045em;
+  height: 0.85em;
+  background: currentColor;
+  margin-left: 0.06em;
+}
+.typing .caret {
+  display: inline-block;
+  animation: blink 0.85s steps(2) infinite;
+}
+@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="line" id="l1"><span class="content"></span><span class="caret"></span></div>
+</div>
+
+<script>
+  const l1 = document.getElementById('l1');
+
+  function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // Type sequence: { plain } or { coral } (rendered as <em.k> in deep ink).
+  async function typeSegments(el, segments, charDelay = 26, jitter = 16) {
+    const content = el.querySelector('.content');
+    content.textContent = '';
+    el.classList.add('typing');
+    for (const seg of segments) {
+      if (seg.coral) {
+        const em = document.createElement('em');
+        em.className = 'k';
+        content.appendChild(em);
+        for (let i = 0; i < seg.coral.length; i++) {
+          em.textContent += seg.coral[i];
+          await wait(charDelay + Math.random() * jitter + 10);
+        }
+      } else {
+        for (let i = 0; i < seg.plain.length; i++) {
+          content.appendChild(document.createTextNode(seg.plain[i]));
+          await wait(charDelay + Math.random() * jitter);
+        }
+      }
+    }
+  }
+
+  // typeOut — walks DOM nodes from the end, preserving the coral em.k
+  // coloring while characters delete one at a time.
+  function typeOut(el, charDelay = 22) {
+    const content = el.querySelector('.content');
+    el.classList.add('typing');
+    return new Promise(resolve => {
+      function tick() {
+        // Find the last non-empty node
+        let last = content.lastChild;
+        while (last && last.textContent === '') {
+          content.removeChild(last);
+          last = content.lastChild;
+        }
+        if (!last) {
+          el.classList.remove('typing');
+          resolve();
+          return;
+        }
+        if (last.nodeType === Node.TEXT_NODE) {
+          last.nodeValue = last.nodeValue.slice(0, -1);
+          if (last.nodeValue === '') content.removeChild(last);
+        } else {
+          // Element node (em.k) — strip last char from inside
+          last.textContent = last.textContent.slice(0, -1);
+        }
+        setTimeout(tick, charDelay);
+      }
+      tick();
+    });
+  }
+
+  // ── Final VO beat. Climax punchline solo on coral wash.
+  //    Type in, hold, type out for the cleanest cut to scene_08. ──
+  async function run() {
+    await wait(500);
+    await typeSegments(l1, [
+      { plain: 'Surfaced by ' },
+      { coral: 'Opus 4.7' },
+      { plain: '.' },
+    ]);
+
+    await wait(2000);
+    await typeOut(l1);
+  }
+
+  run();
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'r' || e.key === 'R') location.reload();
+    if (e.code === 'Space') { e.preventDefault(); location.href = 'scene_08_direction.html'; }
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scene 02 — Problem cascade</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Brygada+1918:ital,wght@0,400..700;1,400..500&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg:      #1A1816;
+  --fg:      #EDE8DC;
+  --fg-soft: #8A847A;
+  --muted:   #5A554E;
+  --coral:   #E17B5D;
+  --serif:   'Brygada 1918', 'Iowan Old Style', Georgia, serif;
+  --mono:    'JetBrains Mono', 'SF Mono', Menlo, monospace;
+
+  --ease-in-out: cubic-bezier(0.65, 0.02, 0.18, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100vh; width: 100vw;
+  background: var(--bg); color: var(--fg);
+  font-family: var(--serif); overflow: hidden; cursor: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.stage {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  padding: 0 6vw;
+  perspective: 2200px;
+  perspective-origin: 50% 45%;
+}
+
+/* Slow gentle 3D drift across the whole 15s. */
+.world {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4.5rem;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  transform: rotateX(6deg) rotateY(-3deg) scale(1);
+  transition: transform 15s linear;
+  will-change: transform;
+}
+.stage.run .world {
+  transform: rotateX(2deg) rotateY(3deg) scale(1.06);
+}
+
+.chain {
+  display: flex; align-items: center; gap: 1.8vw;
+  flex-wrap: nowrap;
+}
+
+.step-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.step {
+  font-style: italic; font-weight: 400;
+  font-size: 2.6vw;
+  line-height: 1.1;
+  letter-spacing: -0.018em;
+  color: var(--fg);
+  white-space: nowrap;
+  display: flex;
+  align-items: baseline;
+}
+.step.unknown { color: var(--coral); font-size: 3.6vw; line-height: 1; }
+
+.step .caret {
+  display: inline-block;
+  width: 0.045em;
+  height: 0.85em;
+  background: var(--fg);
+  margin-left: 0.06em;
+  opacity: 0;
+}
+.step.typing .caret { animation: blink 0.85s steps(2) infinite; }
+@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+/* Arrows between steps — fade in as the next step starts. */
+.arrow {
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 1.4vw;
+  color: var(--muted);
+  align-self: center;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.arrow.in { opacity: 1; }
+
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <div class="world">
+    <div class="chain" id="chain">
+      <!-- step-blocks injected by JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+  const stage   = document.getElementById('stage');
+  const chain   = document.getElementById('chain');
+
+  const STEPS = [
+    { text: '1000+ complaints', kind: '' },
+    { text: '5 themes',         kind: '' },
+    { text: 'roadmap item',     kind: '' },
+    { text: 'backlog ticket',   kind: '' },
+    { text: '?',                kind: 'unknown' },
+  ];
+
+  // Build the chain HTML programmatically.
+  STEPS.forEach((s, i) => {
+    if (i > 0) {
+      const arrow = document.createElement('span');
+      arrow.className = `arrow arrow-${i}`;
+      arrow.textContent = '→';
+      chain.appendChild(arrow);
+    }
+    const block = document.createElement('div');
+    block.className = `step-block step-${i + 1}`;
+    block.innerHTML = `
+      <div class="step ${s.kind} step-text-${i + 1}">
+        <span class="content"></span><span class="caret"></span>
+      </div>
+    `;
+    chain.appendChild(block);
+  });
+
+  // ── Type / untype helpers ──
+  function typeIn(beatEl, text, charDelay = 35) {
+    const content = beatEl.querySelector('.content');
+    content.textContent = '';
+    beatEl.classList.add('typing');
+    let i = 0;
+    return new Promise(resolve => {
+      function tick() {
+        if (i < text.length) {
+          content.textContent += text[i++];
+          setTimeout(tick, charDelay + Math.random() * 25);
+        } else {
+          resolve();
+        }
+      }
+      tick();
+    });
+  }
+
+  function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // ── Sequence ──
+  async function runSequence() {
+    stage.classList.add('run');         // start the slow 3D drift
+    await wait(400);
+
+    for (let i = 0; i < STEPS.length; i++) {
+      if (i > 0) {
+        // Reveal arrow into this step
+        document.querySelector(`.arrow-${i}`).classList.add('in');
+        await wait(220);
+      }
+      const stepEl = document.querySelector(`.step-text-${i + 1}`);
+      await typeIn(stepEl, STEPS[i].text);
+      stepEl.classList.remove('typing');
+
+      // Per-step hold (last step shorter — it's just "?")
+      await wait(i === STEPS.length - 1 ? 600 : 480);
+    }
+    // Caption is now its own scene (scene_02_caption.html).
+  }
+
+  requestAnimationFrame(() => requestAnimationFrame(runSequence));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'r' || e.key === 'R') location.reload();
+    if (e.code === 'Space') { e.preventDefault(); location.href = 'scene_02_caption.html'; }
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Scene 01b — Team grid (company beat)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --paper:   #FFFDF6;
+  --fg-cream:#EDE8DC;
+  --coral:   #C9593C;
+  --mono:    'JetBrains Mono', 'SF Mono', Menlo, monospace;
+
+  --ease-in-out: cubic-bezier(0.65, 0.02, 0.18, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100vh; width: 100vw;
+  overflow: hidden; cursor: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Flat uniform dark — same warm tone as the dev-dot ink coverage in 01a,
+   so the cut from "A hundred developers." into 01b reads as continuous bg. */
+body {
+  background: #1A1816;
+}
+
+/* ── 3D stage — same perspective treatment as scene 05b ── */
+.stage {
+  position: fixed; inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 2000px;
+  perspective-origin: 50% 45%;
+}
+
+/* The plane holds the team grid. Brick pattern — every other row is
+   shifted 50% so dots aren't aligned in columns.
+   IN → OUT camera drift across the scene (~7s). ── */
+.team-plane {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4vw;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  /* IN — start position */
+  transform: translate(160px, -380px) rotateX(48deg) rotateY(-12deg) rotateZ(0deg) scale(2.60);
+  transition: transform 7s linear;
+  will-change: transform;
+}
+.team-plane.drifting {
+  /* OUT — end position */
+  transform: translate(240px, -320px) rotateX(48deg) rotateY(-12deg) rotateZ(10deg) scale(2.60);
+}
+.team-row {
+  display: flex;
+  gap: 1.4vw;
+}
+.team-row.shifted {
+  /* 50% offset: half cell (1.7vw) + half gap (0.7vw) = 2.4vw */
+  margin-left: 2.4vw;
+}
+
+.team-dot {
+  width: 3.4vw;
+  height: 3.4vw;
+  border-radius: 50%;
+  background: var(--paper);
+  flex-shrink: 0;
+  /* Start hidden — each dot fades in fast on scene load (random stagger). */
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 0.45s var(--ease-in-out), transform 0.55s var(--ease-spring), background 0.4s ease, box-shadow 0.4s ease;
+}
+/* Once .ready, the dot is visible AND the irregular pulse animation runs. */
+.team-dot.ready {
+  opacity: 1;
+  transform: scale(1);
+  animation: teamPulse var(--pulse-dur, 2s) ease-in-out var(--pulse-delay, 0s) infinite;
+}
+@keyframes teamPulse {
+  0%, 100% { opacity: 0.95; transform: scale(1); }
+  50%      { opacity: 0.30; transform: scale(0.86); }
+}
+
+/* When a dot is "the designer" — flashes coral with a stronger pulse,
+   then fades back. */
+.team-dot.coral {
+  background: var(--coral);
+  animation: teamCoralFlash 1.4s var(--ease-spring);
+  box-shadow: 0 0 28px rgba(201, 89, 60, 0.6);
+}
+@keyframes teamCoralFlash {
+  0%   { transform: scale(1);   opacity: 1; }
+  20%  { transform: scale(1.45); opacity: 1; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<div id="hud" style="display:none;position:fixed;top:20px;left:20px;z-index:99999;font-family:monospace;font-size:18px;font-weight:700;color:#000;background:#FFEB3B;padding:16px 24px;border:3px solid #000;border-radius:4px;pointer-events:none;">HUD</div>
+
+<div class="stage" id="stage">
+  <div class="team-plane" id="plane"></div>
+</div>
+
+<script>
+  const stage = document.getElementById('stage');
+  const plane = document.getElementById('plane');
+  const hud   = document.getElementById('hud');
+
+  // ── Build the team grid — brick pattern (every other row offset 50%).
+  // 14 cols × 9 rows = 126 dots. Light circles on the dark warm bg. ──
+  const COLS = 14;
+  const ROWS = 9;
+  const team = [];
+  for (let r = 0; r < ROWS; r++) {
+    const row = document.createElement('div');
+    row.className = 'team-row' + (r % 2 === 1 ? ' shifted' : '');
+    for (let c = 0; c < COLS; c++) {
+      const d = document.createElement('div');
+      d.className = 'team-dot';
+      // Per-dot pulse params — irregular "company beat".
+      const dur   = 1.4 + Math.random() * 2.4;       // 1.4–3.8s cycle
+      const delay = -Math.random() * dur;            // random phase offset
+      d.style.setProperty('--pulse-dur', dur.toFixed(2) + 's');
+      d.style.setProperty('--pulse-delay', delay.toFixed(2) + 's');
+      row.appendChild(d);
+      team.push(d);
+    }
+    plane.appendChild(row);
+  }
+
+  // ── Fast cascade fade-in once the scene loads (dots appear from dark). ──
+  // Random shuffle + tight stagger → all dots are visible within ~0.7s.
+  const order = team.slice();
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  order.forEach((d, k) => {
+    setTimeout(() => d.classList.add('ready'), k * 5 + Math.random() * 200);
+  });
+
+  // ── Camera drift IN → OUT — starts the moment the scene appears,
+  // runs for 6s. RAF double-frame ensures the IN transform is rendered
+  // first so the transition kicks in cleanly. ──
+  requestAnimationFrame(() => requestAnimationFrame(() => plane.classList.add('drifting')));
+
+  // ── Coral flash — every ~1.4s a random dot in the CENTRE of the viewport
+  // becomes "the designer". Filter ensures the flash is visible on tape. ──
+  function flashCoral() {
+    const candidates = team.filter(d => {
+      if (!d.classList.contains('ready')) return false;
+      const r = d.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      // Keep flashes within the centre ~55% of the viewport.
+      return Math.abs(cx - window.innerWidth  / 2) < window.innerWidth  * 0.28
+          && Math.abs(cy - window.innerHeight / 2) < window.innerHeight * 0.28;
+    });
+    if (!candidates.length) return;
+    const d = candidates[Math.floor(Math.random() * candidates.length)];
+    d.classList.add('coral');
+    setTimeout(() => d.classList.remove('coral'), 1400);
+  }
+  // Slight delay so the first flash hits after the cascade settles.
+  setTimeout(() => {
+    flashCoral();
+    setInterval(flashCoral, 1400);
+  }, 1100);
+
+  // ── HUD + arrow-key controls — same pattern as scene 05 / 05b.
+  // Initial values match the IN transform; OUT differs by tx, ty, rz. ──
+  let rx = 48, ry = -12, rz = 0, sc = 2.60;
+  let tx = 160, ty = -380;
+
+  function applyTransform() {
+    plane.style.transition = 'none';
+    const t = `translate(${tx}px, ${ty}px) rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale(${sc.toFixed(2)})`;
+    plane.style.transform = t;
+    hud.textContent = t;
+    hud.style.display = 'block';
+  }
+
+  document.addEventListener('keydown', e => {
+    const TWEAK_KEYS = [
+      'ArrowUp','ArrowDown','ArrowLeft','ArrowRight',
+      'w','W','s','S',
+      'h','H','j','J','k','K','l','L',
+      '+','=','-','_','0'
+    ];
+    if (TWEAK_KEYS.includes(e.key)) {
+      e.preventDefault();
+      switch (e.key) {
+        case 'ArrowUp':    rx -= 2; break;
+        case 'ArrowDown':  rx += 2; break;
+        case 'ArrowLeft':  rz -= 2; break;
+        case 'ArrowRight': rz += 2; break;
+        case 'w': case 'W': ry -= 2; break;
+        case 's': case 'S': ry += 2; break;
+        case 'h': case 'H': tx -= 20; break;
+        case 'l': case 'L': tx += 20; break;
+        case 'k': case 'K': ty -= 20; break;
+        case 'j': case 'J': ty += 20; break;
+        case '+': case '=': sc += 0.05; break;
+        case '-': case '_': sc -= 0.05; break;
+        case '0': rx = 48; ry = -12; rz = 0; sc = 2.60; tx = 160; ty = -380; break;
+      }
+      applyTransform();
+      return;
+    }
+
+    if (e.key === 'r' || e.key === 'R') location.reload();
+    if (e.code === 'Space') { e.preventDefault(); location.href = 'scene_02_problem.html'; }
+  });
+</script>
+
+</body>
+</html>
