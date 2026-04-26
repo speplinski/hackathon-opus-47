@@ -6,9 +6,17 @@
 <meta name="description" content="Auditable Design — decision infrastructure that preserves the chain of reasoning from raw user feedback to defensible design direction. Built with Claude Opus 4.7 for Anthropic's hackathon 2026.">
 <title>Auditable Design — reasoning you can inspect</title>
 <script>
-  // Theme init — runs before CSS paints to avoid flash-of-wrong-theme
+  // Theme init — runs before CSS paints to avoid flash-of-wrong-theme.
+  // Precedence: ?theme= URL param > localStorage > system preference.
+  // The URL-param escape hatch lets the video-recording wrappers
+  // force a specific theme without touching localStorage.
   (function () {
     try {
+      var urlTheme = new URLSearchParams(location.search).get('theme');
+      if (urlTheme === 'light' || urlTheme === 'dark') {
+        document.documentElement.setAttribute('data-theme', urlTheme);
+        return;
+      }
       var saved = localStorage.getItem('ad-theme');
       var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       var theme = saved || (prefersDark ? 'dark' : 'light');
@@ -20,6 +28,36 @@
     var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     root.setAttribute('data-theme', next);
     try { localStorage.setItem('ad-theme', next); } catch (e) {}
+  }
+
+  // Video-recording hook: parent wrappers request a smooth scroll to a
+  // section anchor via postMessage. Harmless in production — only fires
+  // when an explicit scrollToAnchor message arrives.
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (!d || d.action !== 'scrollToAnchor' || !d.anchor) return;
+    var target = document.getElementById(d.anchor);
+    if (!target) return;
+    smoothScrollExpo(target.getBoundingClientRect().top + window.scrollY, d.duration || 1800);
+  });
+
+  function smoothScrollExpo(targetY, duration) {
+    var startY = window.scrollY;
+    var distance = targetY - startY;
+    var startTime = performance.now();
+    function ease(t) {
+      if (t === 0) return 0;
+      if (t === 1) return 1;
+      return t < 0.5
+        ? Math.pow(2, 20 * t - 10) / 2
+        : (2 - Math.pow(2, -20 * t + 10)) / 2;
+    }
+    function step(now) {
+      var t = Math.min((now - startTime) / duration, 1);
+      window.scrollTo(0, startY + distance * ease(t));
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
   }
 </script>
 <link rel="stylesheet" href="styles.css">
@@ -53,7 +91,7 @@
 </section>
 
 <!-- ============================================================ PROBLEM -->
-<section class="section problem">
+<section class="section problem" id="problem">
   <div class="wrap">
     <h2 class="kicker">Why this exists</h2>
     <div class="problem-grid">
