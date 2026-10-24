@@ -1,8 +1,9 @@
 version: 2
 updates:
 
-  # Python deps (root project)
-  - package-ecosystem: "pip"
+  # Python deps (root project). The "uv" ecosystem updates pyproject.toml
+  # AND uv.lock together, so the committed lockfile never drifts (ADR-013).
+  - package-ecosystem: "uv"
     directory: "/"
     schedule:
       interval: "weekly"
@@ -10,16 +11,12 @@ updates:
     labels:
       - "dependencies"
       - "security"
-
-  # npm deps for demo SPA
-  - package-ecosystem: "npm"
-    directory: "/demo"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "security"
+    groups:
+      # Minor and patch bumps land as one PR; majors stay separate for review.
+      python-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   # GitHub Actions pins
   - package-ecosystem: "github-actions"
@@ -29,3 +26,7 @@ updates:
     labels:
       - "dependencies"
       - "ci"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
