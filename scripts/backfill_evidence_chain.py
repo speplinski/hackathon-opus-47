@@ -97,41 +97,81 @@ def _native_path(verdict_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 
+def _full_id(member_id: str, known_ids: list[str]) -> str | None:
+    """Resolve a member id to a full review id. Some hand-built inputs
+    store a 12-character prefix of the SHA-1 review id."""
+    if member_id in known_ids:
+        return member_id
+    hits = [rid for rid in known_ids if rid.startswith(member_id)]
+    return hits[0] if len(hits) == 1 else None
+
+
 def backfill_cluster(
     cluster: InsightCluster,
     graphs: dict[str, ComplaintGraph],
+    corpus: dict[str, str] | None = None,
 ) -> tuple[InsightCluster, list[dict[str, Any]]]:
     """Return the cluster with ``representative_review_ids`` filled, plus
     a list of issues. If any quote cannot be matched the cluster is
-    returned unchanged (the schema requires full alignment)."""
+    returned unchanged (the schema requires full alignment).
+
+    A quote matches a member review when it equals one of the review's
+    L2 node quotes. If no node matches and ``corpus`` is given, a quote
+    that is a verbatim substring of the review text also matches
+    (hand-built inputs quote reviews directly). Ids written out are the
+    member ids as the cluster stores them.
+    """
     issues: list[dict[str, Any]] = []
     ids: list[str] = []
+    used: dict[str, set[str]] = {}
+    graph_ids = list(graphs)
+    corpus_ids = list(corpus or {})
     for i, quote in enumerate(cluster.representative_quotes):
-        candidates = [
-            rid
-            for rid in cluster.member_review_ids
-            if rid in graphs
-            and any(n.verbatim_quote == quote for n in graphs[rid].nodes)
-        ]
+        candidates = []
+        for mid in cluster.member_review_ids:
+            gid = _full_id(mid, graph_ids)
+            if gid and any(n.verbatim_quote == quote for n in graphs[gid].nodes):
+                candidates.append(mid)
+        if not candidates and corpus:
+            for mid in cluster.member_review_ids:
+                cid = _full_id(mid, corpus_ids)
+                if cid and quote in corpus[cid]:
+                    candidates.append(mid)
+            if candidates:
+                issues.append(
+                    {
+                        "cluster_id": cluster.cluster_id,
+                        "quote_idx": i,
+                        "issue": "matched_in_corpus_text",
+                    }
+                )
         if not candidates:
             issues.append(
                 {"cluster_id": cluster.cluster_id, "quote_idx": i, "issue": "no_match"}
             )
             continue
+        # L3 took each representative quote from a distinct node, so a
+        # text repeated in the list came from different nodes. Give each
+        # repeat a different review when possible.
+        seen = used.setdefault(quote, set())
+        fresh = [rid for rid in candidates if rid not in seen]
+        chosen = (fresh or candidates)[0]
+        seen.add(chosen)
         if len(candidates) > 1:
-            # Identical quote text in several reviews: any of them is a
-            # true source of the text. Take the first in member order and
-            # record it so the choice is visible.
+            # The text is attested verbatim in several reviews; the run
+            # did not record which node L3 picked. Any candidate is a
+            # true source of the text, but the choice is not the
+            # original one, so it is reported.
             issues.append(
                 {
                     "cluster_id": cluster.cluster_id,
                     "quote_idx": i,
                     "issue": "ambiguous",
                     "candidates": candidates,
-                    "chosen": candidates[0],
+                    "chosen": chosen,
                 }
             )
-        ids.append(candidates[0])
+        ids.append(chosen)
     if len(ids) != len(cluster.representative_quotes):
         return cluster, issues
     data = cluster.model_dump(mode="json")
@@ -144,6 +184,11 @@ def cmd_clusters(args: argparse.Namespace) -> dict[str, Any]:
         g.review_id: g
         for g in (ComplaintGraph.model_validate(r) for r in _read_jsonl(args.graphs))
     }
+    corpus = (
+        {r["review_id"]: r["text"] for r in _read_jsonl(args.corpus)}
+        if args.corpus
+        else None
+    )
     report: dict[str, Any] = {"files": []}
     for path in args.clusters:
         rows = _read_jsonl(path)
@@ -152,7 +197,7 @@ def cmd_clusters(args: argparse.Namespace) -> dict[str, Any]:
         filled = 0
         for row in rows:
             cluster = InsightCluster.model_validate(row)
-            new, cluster_issues = backfill_cluster(cluster, graphs)
+            new, cluster_issues = backfill_cluster(cluster, graphs, corpus)
             issues += cluster_issues
             if new.representative_review_ids:
                 filled += 1
@@ -238,6 +283,48 @@ def cmd_l4(args: argparse.Namespace) -> dict[str, Any]:
                 "verdicts": len(out_rows),
                 "filled": filled,
                 "issues": issues,
+            }
+        )
+    return report
+
+
+def _verdict_key(row: dict[str, Any]) -> tuple[str, str, str, str]:
+    return (
+        str(row["verdict_id"]),
+        str(row["skill_id"]),
+        str(row["claude_model"]),
+        str(row["produced_at"]),
+    )
+
+
+def cmd_bundle(args: argparse.Namespace) -> dict[str, Any]:
+    """Rewrite an L5 input bundle with backfilled L4 verdicts. Each row
+    is swapped for the backfilled verdict with the same id, skill, model
+    and timestamp, so the bundle's content and order are otherwise
+    unchanged."""
+    by_key: dict[tuple[str, str, str, str], dict[str, Any]] = {}
+    for path in args.l4_verdicts:
+        for row in _read_jsonl(path):
+            by_key[_verdict_key(AuditVerdict.model_validate(row).model_dump(mode="json"))] = row
+    report: dict[str, Any] = {"files": []}
+    for path in args.bundles:
+        out_rows, missing = [], []
+        for row in _read_jsonl(path):
+            key = _verdict_key(AuditVerdict.model_validate(row).model_dump(mode="json"))
+            if key in by_key:
+                out_rows.append(by_key[key])
+            else:
+                missing.append(key[0])
+                out_rows.append(row)
+        out = _mirror(path, args.out_root)
+        _write_jsonl(out, out_rows)
+        report["files"].append(
+            {
+                "input": str(path),
+                "output": str(out),
+                "rows": len(out_rows),
+                "replaced": len(out_rows) - len(missing),
+                "missing": missing,
             }
         )
     return report
@@ -339,20 +426,35 @@ def main(argv: list[str] | None = None) -> int:
     pc = sub.add_parser("clusters", help="fill representative_review_ids")
     pc.add_argument("--graphs", type=Path, required=True)
     pc.add_argument("--clusters", type=Path, nargs="+", required=True)
+    pc.add_argument(
+        "--corpus",
+        type=Path,
+        help="raw corpus JSONL; quotes not found among L2 nodes are "
+        "matched as verbatim substrings of member review text",
+    )
 
     p4 = sub.add_parser("l4", help="fill L4 evidence_review_ids")
     p4.add_argument("--clusters", type=Path, required=True)
     p4.add_argument("--verdicts", type=Path, nargs="+", required=True)
 
+    pb = sub.add_parser("bundle", help="swap backfilled L4 verdicts into L5 bundles")
+    pb.add_argument("--bundles", type=Path, nargs="+", required=True)
+    pb.add_argument("--l4-verdicts", type=Path, nargs="+", required=True)
+
     p5 = sub.add_parser("l5", help="fill L5 evidence_review_ids")
     p5.add_argument("--bundle", type=Path, required=True)
     p5.add_argument("--verdicts", type=Path, nargs="+", required=True)
 
-    for sp in (pc, p4, p5):
+    for sp in (pc, p4, pb, p5):
         sp.add_argument("--out-root", type=Path, required=True)
 
     args = p.parse_args(argv)
-    report = {"clusters": cmd_clusters, "l4": cmd_l4, "l5": cmd_l5}[args.cmd](args)
+    report = {
+        "clusters": cmd_clusters,
+        "l4": cmd_l4,
+        "bundle": cmd_bundle,
+        "l5": cmd_l5,
+    }[args.cmd](args)
     json.dump(report, sys.stdout, ensure_ascii=False, indent=2)
     sys.stdout.write("\n")
     return 0

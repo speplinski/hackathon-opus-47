@@ -4,7 +4,7 @@
 
 **Pipeline model:** `opus47` · **loop verifier:** `tchebycheff` · **cluster members:** 27 reviews · **baseline heuristics:** 7
 
-**Generated:** 2026-04-24T18:11:48+00:00
+**Generated:** 2026-10-25T17:35:52+00:00
 
 ---
 
@@ -79,6 +79,16 @@ Grounded evidence from product screenshots is attached per heuristic (confirmed 
 | `upgrade_path_opaque` | 7 | confirmed | 7 | The primary CTA 'TRY 1 WEEK FOR FREE' in screenshots 2 and 3 shows no adjacent copy disclosing post-trial price, billing cadence, or auto-renewal terms — no fine print is rendered on the modal surface. |
 
 **Baseline severity sum:** 55
+
+**Evidence per finding:**
+
+- `deliberate_friction_misapplied__corroborated`: `1e2f9632dff3f69e23da88829b0e4c04a3ee294e` — “losing my streak” · `b65b2ba944c88c03d00536e1e8c55f4eebdcf87c` — “lost all my streak and progress” · `1e09575af1a8f786530871cc6b529810717d1660` — “lose your streak” · `5b409f9b2a194e67ba94811c6553469851fccf86` — “all my streak disappeared” · `8f527f6f2ca074cb419c84c5011af80c7a5aa370` — “can't even sustain my streak”
+- `monetisation_interrupts_value__posture_drift_within_product__skeleton_does_not_honour_priority`: `b65b2ba944c88c03d00536e1e8c55f4eebdcf87c` — “lost all my streak and progress” · `8f527f6f2ca074cb419c84c5011af80c7a5aa370` — “can't even sustain my streak”
+- `blame_the_user_framing__burdens_with_internal_problems__loss_framed_free_exit`: `b65b2ba944c88c03d00536e1e8c55f4eebdcf87c` — “lost all my streak and progress” · `5b409f9b2a194e67ba94811c6553469851fccf86` — “all my streak disappeared” · `8f527f6f2ca074cb419c84c5011af80c7a5aa370` — “can't even sustain my streak”
+- `fudgeability_absent__missing_undo`: `1e2f9632dff3f69e23da88829b0e4c04a3ee294e` — “losing my streak” · `b65b2ba944c88c03d00536e1e8c55f4eebdcf87c` — “lost all my streak and progress” · `1e09575af1a8f786530871cc6b529810717d1660` — “lose your streak” · `5b409f9b2a194e67ba94811c6553469851fccf86` — “all my streak disappeared” · `8f527f6f2ca074cb419c84c5011af80c7a5aa370` — “can't even sustain my streak”
+- `cr_undermined_by_r_dollar__pattern_declared_not_implemented__strategy_contradicts_itself`: `1e2f9632dff3f69e23da88829b0e4c04a3ee294e` — “losing my streak” · `b65b2ba944c88c03d00536e1e8c55f4eebdcf87c` — “lost all my streak and progress” · `1e09575af1a8f786530871cc6b529810717d1660` — “lose your streak” · `5b409f9b2a194e67ba94811c6553469851fccf86` — “all my streak disappeared” · `8f527f6f2ca074cb419c84c5011af80c7a5aa370` — “can't even sustain my streak”
+- `competing_calls_to_action__false_signifier`: `1e2f9632dff3f69e23da88829b0e4c04a3ee294e` — “losing my streak” · `1e09575af1a8f786530871cc6b529810717d1660` — “lose your streak”
+- `upgrade_path_opaque`: no quote cited (artifact-only evidence)
 
 ---
 
@@ -170,7 +180,7 @@ This brief is **direction, not specification**. Translate into wireframes, compo
 
 **What the brief guarantees:**
 
-- Every finding has a typed chain back to informing user reviews and (where run) real-product screenshots.
+- Every finding that cites user quotes has a typed chain back to the reviews those quotes come from (see *Evidence per finding*); findings without quotes rest on the product artifact and are marked as such. Where run, real-product screenshots add a second, grounded check.
 - The validated direction self-verifies (ensemble-internal) against the same heuristic baseline — i.e. the re-audit confirms the direction reduces measured pain.
 - Every rejected loop attempt is preserved above for audit.
 
@@ -189,8 +199,8 @@ Designers should feel free to reject the direction on any of the above axes. The
 
 | Layer | Input file | sha256 |
 |---|---|---|
-| L3b cluster | `data/derived/l5_reconcile/shared_l2opus47/l3b_filtered_opus47.jsonl` | `e108546d680fc036` |
-| L5 reconciled | `data/derived/l5_reconcile/shared_l2opus47/l5_reconciled_opus47.jsonl` | `76cb7581efa59ce1` |
+| L3b cluster | `data/derived_evchain/data/derived/l5_reconcile/shared_l2opus47/l3b_filtered_opus47.jsonl` | `4fffc601e99d8cb0` |
+| L5 reconciled | `data/derived_evchain/data/derived/l5_reconcile/shared_l2opus47/l5_reconciled_opus47.jsonl` | `a27d9b21e480f98d` |
 | L6 priority | `data/derived/l6_weight/shared_l2opus47/l6_priority_opus47.jsonl` | `e271e80f8cd18fcf` |
 | L7 decision | `data/derived/l7_decide/shared_l2opus47/l7_design_decisions_opus47.jsonl` | `d13750a19a957491` |
 | L8 thin-spine iterations | `data/derived/l8_optimize/shared_l2opus47/l8_optimization_iterations_opus47.jsonl` | `0479b71a0d07a8b4` |

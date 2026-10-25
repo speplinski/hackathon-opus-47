@@ -45,6 +45,13 @@
       "all my streak disappeared",
       "can't even sustain my streak"
     ],
+    "representative_review_ids": [
+      "1e2f9632dff3f69e23da88829b0e4c04a3ee294e",
+      "b65b2ba944c88c03d00536e1e8c55f4eebdcf87c",
+      "1e09575af1a8f786530871cc6b529810717d1660",
+      "5b409f9b2a194e67ba94811c6553469851fccf86",
+      "8f527f6f2ca074cb419c84c5011af80c7a5aa370"
+    ],
     "ui_context": null
   },
   "reconciled": {
@@ -54,42 +61,70 @@
         "severity": 7,
         "violation": "Cooper's modal_excise, usability's deliberate_friction_misapplied and wide_gulf_of_execution, a11y's situational_inclusion_gap, and architecture's featuritis all describe the same defect: the energy mechanic fires mid-lesson to force a decision that could wait for a boundary.",
         "reasoning": "rank_score=28 (severity=7 × corroboration=4, unique_frames=4) | skills=[audit-accessibility, audit-interaction-design, audit-usability-fundamentals, audit-ux-architecture] | rationale: Corroboration across 4 skill(s) (audit-accessibility, audit-interaction-design, audit-usability-fundamentals, audit-ux-architecture): Cooper's modal_excise, usability's deliberate_friction_misapplied and wide_gulf_of_execution, a11y's situational_inclusion_gap, and architecture's featuritis all describe the same defect: the energy mechanic fires mid-lesson to force a decision that could wait for a boundary.",
-        "evidence_review_ids": []
+        "evidence_review_ids": [
+          "1e2f9632dff3f69e23da88829b0e4c04a3ee294e",
+          "b65b2ba944c88c03d00536e1e8c55f4eebdcf87c",
+          "1e09575af1a8f786530871cc6b529810717d1660",
+          "5b409f9b2a194e67ba94811c6553469851fccf86",
+          "8f527f6f2ca074cb419c84c5011af80c7a5aa370"
+        ]
       },
       {
         "heuristic": "monetisation_interrupts_value__posture_drift_within_product__skeleton_does_not_honour_priority",
         "severity": 9,
         "violation": "Cooper's posture_drift, Garrett's skeleton_does_not_honour_priority, and business's monetisation_interrupts_value name the same defect — the lesson surface is overridden by a monetisation surface mid-task — through interaction, architectural, and business-model lenses.",
         "reasoning": "rank_score=27 (severity=9 × corroboration=3, unique_frames=3) | skills=[audit-business-alignment, audit-interaction-design, audit-ux-architecture] | rationale: Corroboration across 3 skill(s) (audit-business-alignment, audit-interaction-design, audit-ux-architecture): Cooper's posture_drift, Garrett's skeleton_does_not_honour_priority, and business's monetisation_interrupts_value name the same defect — the lesson surface is overridden by a monetisation surface mid-task — through interaction, architectural, and business-model lenses.",
-        "evidence_review_ids": []
+        "evidence_review_ids": [
+          "b65b2ba944c88c03d00536e1e8c55f4eebdcf87c",
+          "8f527f6f2ca074cb419c84c5011af80c7a5aa370"
+        ]
       },
       {
         "heuristic": "blame_the_user_framing__burdens_with_internal_problems__loss_framed_free_exit",
         "severity": 7,
         "violation": "A11y's loss_framed_free_exit, usability's blame_the_user_framing, and Cooper's burdens_with_internal_problems describe the same 'LOSE XP' / 'QUIT LESSON' copy as asymmetric, self-blaming, and narrating an internal rate limit as user fault.",
         "reasoning": "rank_score=21 (severity=7 × corroboration=3, unique_frames=3) | skills=[audit-accessibility, audit-interaction-design, audit-usability-fundamentals] | rationale: Corroboration across 3 skill(s) (audit-accessibility, audit-interaction-design, audit-usability-fundamentals): A11y's loss_framed_free_exit, usability's blame_the_user_framing, and Cooper's burdens_with_internal_problems describe the same 'LOSE XP' / 'QUIT LESSON' copy as asymmetric, self-blaming, and narrating an internal rate limit as user fault.",
-        "evidence_review_ids": []
+        "evidence_review_ids": [
+          "b65b2ba944c88c03d00536e1e8c55f4eebdcf87c",
+          "5b409f9b2a194e67ba94811c6553469851fccf86",
+          "8f527f6f2ca074cb419c84c5011af80c7a5aa370"
+        ]
       },
       {
         "heuristic": "fudgeability_absent__missing_undo",
         "severity": 9,
         "violation": "Usability's missing_undo and Cooper's fudgeability_absent both identify the same defect: no state preserves in-progress lesson and streak when energy depletes — the user quotes are reports of this missing state.",
         "reasoning": "rank_score=18 (severity=9 × corroboration=2, unique_frames=2) | skills=[audit-interaction-design, audit-usability-fundamentals] | rationale: Corroboration across 2 skill(s) (audit-interaction-design, audit-usability-fundamentals): Usability's missing_undo and Cooper's fudgeability_absent both identify the same defect: no state preserves in-progress lesson and streak when energy depletes — the user quotes are reports of this missing state.",
-        "evidence_review_ids": []
+        "evidence_review_ids": [
+          "1e2f9632dff3f69e23da88829b0e4c04a3ee294e",
+          "b65b2ba944c88c03d00536e1e8c55f4eebdcf87c",
+          "1e09575af1a8f786530871cc6b529810717d1660",
+          "5b409f9b2a194e67ba94811c6553469851fccf86",
+          "8f527f6f2ca074cb419c84c5011af80c7a5aa370"
+        ]
       },
       {
         "heuristic": "cr_undermined_by_r_dollar__pattern_declared_not_implemented__strategy_contradicts_itself",
         "severity": 9,
         "violation": "Business's cr_undermined_by_r_dollar and pattern_declared_not_implemented, plus architecture's strategy_contradicts_itself, name the same defect: the 'free' value proposition is contradicted by monetisation that weaponises earned progress.",
         "reasoning": "rank_score=18 (severity=9 × corroboration=2, unique_frames=2) | skills=[audit-business-alignment, audit-ux-architecture] | rationale: Corroboration across 2 skill(s) (audit-business-alignment, audit-ux-architecture): Business's cr_undermined_by_r_dollar and pattern_declared_not_implemented, plus architecture's strategy_contradicts_itself, name the same defect: the 'free' value proposition is contradicted by monetisation that weaponises earned progress.",
-        "evidence_review_ids": []
+        "evidence_review_ids": [
+          "1e2f9632dff3f69e23da88829b0e4c04a3ee294e",
+          "b65b2ba944c88c03d00536e1e8c55f4eebdcf87c",
+          "1e09575af1a8f786530871cc6b529810717d1660",
+          "5b409f9b2a194e67ba94811c6553469851fccf86",
+          "8f527f6f2ca074cb419c84c5011af80c7a5aa370"
+        ]
       },
       {
         "heuristic": "competing_calls_to_action__false_signifier",
         "severity": 7,
         "violation": "Usability's false_signifier and architecture's competing_calls_to_action name the same defect: the paid CTA carries primary visual weight while the free exit is the weakest element.",
         "reasoning": "rank_score=14 (severity=7 × corroboration=2, unique_frames=2) | skills=[audit-usability-fundamentals, audit-ux-architecture] | rationale: Corroboration across 2 skill(s) (audit-usability-fundamentals, audit-ux-architecture): Usability's false_signifier and architecture's competing_calls_to_action name the same defect: the paid CTA carries primary visual weight while the free exit is the weakest element.",
-        "evidence_review_ids": []
+        "evidence_review_ids": [
+          "1e2f9632dff3f69e23da88829b0e4c04a3ee294e",
+          "1e09575af1a8f786530871cc6b529810717d1660"
+        ]
       },
       {
         "heuristic": "upgrade_path_opaque",

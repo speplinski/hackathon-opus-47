@@ -64,6 +64,29 @@ class TestClusters:
         assert issues[0]["issue"] == "ambiguous"
         assert issues[0]["candidates"] == ["r1", "r3"]
 
+    def test_repeated_quote_text_goes_to_distinct_reviews(self) -> None:
+        new, issues = bf.backfill_cluster(
+            _cluster(["mic says wrong", "mic says wrong"]), _graphs()
+        )
+        assert new.representative_review_ids == ["r1", "r3"]
+        assert [i["chosen"] for i in issues] == ["r1", "r3"]
+
+    def test_corpus_fallback_and_short_member_ids(self) -> None:
+        cluster = InsightCluster(
+            cluster_id="cluster_02",
+            label="Hand-built",
+            member_review_ids=["r1abc", "r2abc"],
+            centroid_vector_ref="l3_centroids.npy#2",
+            representative_quotes=["keep my streak"],
+        )
+        corpus = {
+            "r1abcdef": "nothing relevant here",
+            "r2abcdef": "I just want to keep my streak alive",
+        }
+        new, issues = bf.backfill_cluster(cluster, {}, corpus)
+        assert new.representative_review_ids == ["r2abc"]
+        assert issues[0]["issue"] == "matched_in_corpus_text"
+
     def test_unmatched_quote_leaves_cluster_untouched(self) -> None:
         new, issues = bf.backfill_cluster(
             _cluster(["wrong answer again", "not in any review"]), _graphs()

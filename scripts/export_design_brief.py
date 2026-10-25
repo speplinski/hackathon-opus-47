@@ -505,9 +505,11 @@ def _build_brief(
         "**What the brief guarantees:**",
         "",
         (
-            "- Every finding has a typed chain back to the reviews whose "
-            "quotes the lenses cited (see *Evidence per finding*) and "
-            "(where run) real-product screenshots."
+            "- Every finding that cites user quotes has a typed chain "
+            "back to the reviews those quotes come from (see *Evidence "
+            "per finding*); findings without quotes rest on the product "
+            "artifact and are marked as such. Where run, real-product "
+            "screenshots add a second, grounded check."
             if chain_per_finding
             else "- Every finding traces back to this cluster's member "
             "reviews and representative quotes, and (where run) "
