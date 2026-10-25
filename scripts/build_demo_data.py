@@ -85,6 +85,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model-short", default=DEFAULT_MODEL_SHORT)
     parser.add_argument("--loop-verifier", default=DEFAULT_LOOP_VERIFIER)
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
+    parser.add_argument(
+        "--l5-dir",
+        type=Path,
+        default=_REPO_ROOT / "data/derived/l5_reconcile" / _SHARED_SUBDIR,
+        help="directory with l3b_filtered_* and l5_reconciled_* "
+        "(e.g. the backfilled copy under data/derived_evchain)",
+    )
     args = parser.parse_args(argv)
 
     cluster_id = args.cluster_id
@@ -92,14 +99,8 @@ def main(argv: list[str] | None = None) -> int:
     stem = cluster_id.replace("_", "")
 
     # Resolve paths under the shared-L2-opus47 layout.
-    clusters_path = (
-        _REPO_ROOT / "data/derived/l5_reconcile" / _SHARED_SUBDIR
-        / f"l3b_filtered_{model_short}.jsonl"
-    )
-    reconciled_path = (
-        _REPO_ROOT / "data/derived/l5_reconcile" / _SHARED_SUBDIR
-        / f"l5_reconciled_{model_short}.jsonl"
-    )
+    clusters_path = args.l5_dir / f"l3b_filtered_{model_short}.jsonl"
+    reconciled_path = args.l5_dir / f"l5_reconciled_{model_short}.jsonl"
     priority_path = (
         _REPO_ROOT / "data/derived/l6_weight" / _SHARED_SUBDIR
         / f"l6_priority_{model_short}.jsonl"
@@ -190,6 +191,7 @@ def main(argv: list[str] | None = None) -> int:
             "label": cluster["label"],
             "member_review_ids": cluster["member_review_ids"],
             "representative_quotes": cluster["representative_quotes"],
+            "representative_review_ids": cluster.get("representative_review_ids", []),
             "ui_context": cluster.get("ui_context"),
         },
         "reconciled": {

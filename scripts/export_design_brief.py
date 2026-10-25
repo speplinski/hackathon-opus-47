@@ -117,6 +117,43 @@ def _extract_section(md: Path, header: str) -> str | None:
 # ---------------------------------------------------------------------------
 
 
+def _evidence_per_finding(
+    cluster: InsightCluster,
+    reconciled: ReconciledVerdict,
+) -> list[str]:
+    """Markdown block listing, per ranked heuristic, the reviews (and
+    their representative quotes) the cited L4 findings rest on."""
+    lines = ["**Evidence per finding:**", ""]
+    if not any(v.evidence_review_ids for v in reconciled.ranked_violations):
+        lines += [
+            "Per-finding review ids are not available for this run "
+            "(data produced before L3 recorded the review behind each "
+            "representative quote). The chain resolves to the cluster's "
+            "member reviews listed above.",
+            "",
+        ]
+        return lines
+    quotes_by_review: dict[str, list[str]] = {}
+    for rid, q in zip(
+        cluster.representative_review_ids,
+        cluster.representative_quotes,
+        strict=False,
+    ):
+        quotes_by_review.setdefault(rid, []).append(q)
+    for v in reconciled.ranked_violations:
+        if not v.evidence_review_ids:
+            lines.append(f"- `{v.heuristic}`: no quote cited (artifact-only evidence)")
+            continue
+        refs = []
+        for rid in v.evidence_review_ids:
+            qs = quotes_by_review.get(rid, [])
+            shown = "; ".join(f"“{q}”" for q in qs)
+            refs.append(f"`{rid}`" + (f" — {shown}" if shown else ""))
+        lines.append(f"- `{v.heuristic}`: " + " · ".join(refs))
+    lines.append("")
+    return lines
+
+
 def _build_brief(
     *,
     cluster: InsightCluster,
@@ -169,6 +206,9 @@ def _build_brief(
         it.iteration_index >= 2 and it.accepted for it in iters_sorted
     )
     rejected_iters = [it for it in iters_sorted if not it.accepted]
+    chain_per_finding = any(
+        v.evidence_review_ids for v in reconciled.ranked_violations
+    )
 
     lines: list[str] = []
 
@@ -280,6 +320,7 @@ def _build_brief(
             lines.append(f"| `{v.heuristic}` | {v.severity} | {viol} |")
 
     lines += ["", f"**Baseline severity sum:** {baseline_sum}", ""]
+    lines += _evidence_per_finding(cluster, reconciled)
     if reconciled.tensions:
         lines += [
             "**Skill tensions surfaced by reconciliation:**",
@@ -463,8 +504,18 @@ def _build_brief(
         "",
         "**What the brief guarantees:**",
         "",
-        "- Every finding has a typed chain back to informing user "
-        "reviews and (where run) real-product screenshots.",
+        (
+            "- Every finding that cites user quotes has a typed chain "
+            "back to the reviews those quotes come from (see *Evidence "
+            "per finding*); findings without quotes rest on the product "
+            "artifact and are marked as such. Where run, real-product "
+            "screenshots add a second, grounded check."
+            if chain_per_finding
+            else "- Every finding traces back to this cluster's member "
+            "reviews and representative quotes, and (where run) "
+            "real-product screenshots. Per-finding review ids are not "
+            "available for this run."
+        ),
         "- The validated direction self-verifies (ensemble-internal) "
         "against the same heuristic baseline — i.e. the re-audit "
         "confirms the direction reduces measured pain.",

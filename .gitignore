@@ -16,6 +16,7 @@ __pycache__/
 # Data — large/generated; tracked artifacts explicitly whitelisted below
 data/raw/
 data/derived/
+data/derived_evchain/
 data/artifacts/
 data/log/
 data/quarantine/

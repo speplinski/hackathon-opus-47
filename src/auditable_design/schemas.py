@@ -302,6 +302,49 @@ class InsightCluster(_StrictModel):
             "tag from their prompt so cache keys stay stable."
         ),
     )
+    representative_review_ids: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Review id of each representative quote, aligned by position "
+            "with ``representative_quotes`` (``representative_review_ids[i]`` "
+            "is the review whose complaint-graph node produced "
+            "``representative_quotes[i]``). Lets L4 resolve a finding's "
+            "``evidence_quote_idxs`` to concrete reviews. Empty for "
+            "clusters written before this field existed; prompt builders "
+            "never render it, so replay-cache keys are unaffected."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _review_ids_align_with_quotes(self) -> InsightCluster:
+        ids = self.representative_review_ids
+        if ids and len(ids) != len(self.representative_quotes):
+            raise ValueError(
+                f"representative_review_ids has {len(ids)} entries but "
+                f"representative_quotes has {len(self.representative_quotes)}; "
+                "they must align by position"
+            )
+        unknown = sorted(set(ids) - set(self.member_review_ids))
+        if unknown:
+            raise ValueError(
+                f"representative_review_ids not in member_review_ids: {unknown}"
+            )
+        return self
+
+    def evidence_review_ids_for(self, quote_idxs: list[int]) -> list[str]:
+        """Resolve quote indices to review ids (deduplicated, in order).
+
+        Returns ``[]`` when this cluster predates
+        ``representative_review_ids``.
+        """
+        if not self.representative_review_ids:
+            return []
+        seen: list[str] = []
+        for idx in quote_idxs:
+            rid = self.representative_review_ids[idx]
+            if rid not in seen:
+                seen.append(rid)
+        return seen
 
 
 # ---------------------------------------------------------------------------
