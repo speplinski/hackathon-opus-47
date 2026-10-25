@@ -133,6 +133,7 @@ __all__ = [
     "load_l2_graphs",
     "main",
     "run_clustering",
+    "select_representative_indices",
     "select_representative_quotes",
 ]
 
@@ -382,6 +383,37 @@ def compute_centroids(
     return centroids
 
 
+def select_representative_indices(
+    embeddings: npt.NDArray[np.float32],
+    labels: npt.NDArray[np.int64],
+    centroids: dict[int, npt.NDArray[np.float32]],
+    *,
+    k: int = REPRESENTATIVE_QUOTES_K,
+) -> dict[int, list[int]]:
+    """Node indices of the top-k nodes closest to the (unit-normalised)
+    centroid, per cluster, most similar first.
+
+    Indices point into the arrays produced by ``extract_clusterable_nodes``
+    (``quotes`` and ``node_index``), so a caller can recover both the quote
+    text and the ``(review_id, node_id)`` it came from.
+    """
+    representatives: dict[int, list[int]] = {}
+    for cluster_id, centroid in centroids.items():
+        mask = labels == cluster_id
+        member_indices = np.where(mask)[0]
+        member_embeddings = embeddings[member_indices]
+
+        # Unit-norm the centroid for cosine; members are already unit-norm.
+        # +1e-12 guards against the pathological zero-centroid case which
+        # shouldn't happen in practice but mustn't NaN if it does.
+        centroid_norm = centroid / (float(np.linalg.norm(centroid)) + 1e-12)
+        similarities = member_embeddings @ centroid_norm
+
+        top_within_cluster = np.argsort(similarities)[::-1][:k]
+        representatives[cluster_id] = [int(i) for i in member_indices[top_within_cluster]]
+    return representatives
+
+
 def select_representative_quotes(
     embeddings: npt.NDArray[np.float32],
     labels: npt.NDArray[np.int64],
@@ -397,22 +429,8 @@ def select_representative_quotes(
     as the cluster is non-empty (guaranteed by ``compute_centroids``) the
     output is valid.
     """
-    representatives: dict[int, list[str]] = {}
-    for cluster_id, centroid in centroids.items():
-        mask = labels == cluster_id
-        member_indices = np.where(mask)[0]
-        member_embeddings = embeddings[member_indices]
-
-        # Unit-norm the centroid for cosine; members are already unit-norm.
-        # +1e-12 guards against the pathological zero-centroid case which
-        # shouldn't happen in practice but mustn't NaN if it does.
-        centroid_norm = centroid / (float(np.linalg.norm(centroid)) + 1e-12)
-        similarities = member_embeddings @ centroid_norm
-
-        top_within_cluster = np.argsort(similarities)[::-1][:k]
-        top_quote_indices = member_indices[top_within_cluster]
-        representatives[cluster_id] = [quotes[i] for i in top_quote_indices]
-    return representatives
+    indices = select_representative_indices(embeddings, labels, centroids, k=k)
+    return {cid: [quotes[i] for i in idxs] for cid, idxs in indices.items()}
 
 
 def aggregate_review_membership(
@@ -440,6 +458,7 @@ def build_insight_clusters(
     representative_quotes: dict[int, list[str]],
     review_membership: dict[int, list[str]],
     centroids_path: Path,
+    representative_review_ids: dict[int, list[str]] | None = None,
 ) -> list[InsightCluster]:
     """Assemble Pydantic :class:`InsightCluster` records.
 
@@ -484,6 +503,11 @@ def build_insight_clusters(
                 member_review_ids=members,
                 centroid_vector_ref=ref,
                 representative_quotes=representative_quotes[cluster_id],
+                representative_review_ids=(
+                    representative_review_ids[cluster_id]
+                    if representative_review_ids is not None
+                    else []
+                ),
             )
         )
     return results
@@ -578,7 +602,15 @@ def run_clustering(
             "cannot emit InsightCluster records"
         )
 
-    representative_quotes = select_representative_quotes(embeddings, labels, quotes, centroids)
+    representative_indices = select_representative_indices(embeddings, labels, centroids)
+    representative_quotes = {
+        cid: [quotes[i] for i in idxs] for cid, idxs in representative_indices.items()
+    }
+    # Keep the review behind each representative quote so L4 can resolve a
+    # finding's quote indices to concrete reviews (typed evidence chain).
+    representative_review_ids = {
+        cid: [node_index[i][0] for i in idxs] for cid, idxs in representative_indices.items()
+    }
     review_membership = aggregate_review_membership(labels, node_index)
 
     insight_clusters = build_insight_clusters(
@@ -586,6 +618,7 @@ def run_clustering(
         representative_quotes=representative_quotes,
         review_membership=review_membership,
         centroids_path=centroids_path,
+        representative_review_ids=representative_review_ids,
     )
 
     sorted_ids = sorted(centroids.keys())

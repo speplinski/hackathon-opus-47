@@ -658,10 +658,11 @@ def _build_heuristic_violations(
     ``reasoning`` string. The full structured copy lives in the native
     payload sidecar so a reviewer can always recover it cleanly.
 
-    ``evidence_review_ids`` is left empty for the same reason as
-    Norman's module: quotes lack an explicit back-mapping to review
-    ids, and fuzzy substring matching is fragile. A later pass can
-    populate this mapping upstream in L3.
+    ``evidence_review_ids`` comes from the finding's
+    ``evidence_quote_idxs`` resolved through
+    :meth:`InsightCluster.evidence_review_ids_for`: L3 records which
+    review each representative quote was taken from. Clusters built
+    before that field existed resolve to ``[]``.
     """
     violations: list[HeuristicViolation] = []
     for finding in payload["findings"]:
@@ -706,7 +707,9 @@ def _build_heuristic_violations(
                 heuristic=finding["heuristic"],
                 violation=finding["violation"],
                 severity=anchored,
-                evidence_review_ids=[],
+                evidence_review_ids=cluster.evidence_review_ids_for(
+                    finding["evidence_quote_idxs"]
+                ),
                 reasoning=reasoning,
             )
         )

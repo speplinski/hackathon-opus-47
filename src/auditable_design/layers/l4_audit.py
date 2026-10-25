@@ -467,16 +467,11 @@ def _build_heuristic_violations(
     Nielsen severity is remapped to ADR-008's 0–10 anchors via
     :data:`NIELSEN_TO_ANCHORED`.
 
-    ``evidence_review_ids`` is left empty: the cluster's
-    ``representative_quotes`` is ``list[str]`` with no explicit mapping
-    back to review ids. Attempting to recover review ids by substring
-    search against member reviews is fragile (multi-quote reviews,
-    overlapping substrings) and overkill for the thin spine. The
-    evidence trail is preserved via the quote indices in ``reasoning``,
-    and the full native payload is carried through the sidecar — so
-    dropping ``evidence_review_ids`` does not lose information, it just
-    relocates it. A later widening can compute the mapping at L4 or
-    push it upstream into L3.
+    ``evidence_review_ids`` comes from the finding's
+    ``evidence_quote_idxs`` resolved through
+    :meth:`InsightCluster.evidence_review_ids_for`: L3 records which
+    review each representative quote was taken from. Clusters built
+    before that field existed resolve to ``[]``.
     """
     violations: list[HeuristicViolation] = []
     for finding in payload["findings"]:
@@ -497,7 +492,9 @@ def _build_heuristic_violations(
                 heuristic=finding["heuristic"],
                 violation=finding["violation"],
                 severity=anchored,
-                evidence_review_ids=[],
+                evidence_review_ids=cluster.evidence_review_ids_for(
+                    finding["evidence_quote_idxs"]
+                ),
                 reasoning=reasoning,
             )
         )

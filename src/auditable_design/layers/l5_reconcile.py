@@ -120,6 +120,7 @@ __all__ = [
     "ReconcileParseError",
     "build_provenance",
     "build_user_message",
+    "evidence_review_ids_for_entry",
     "load_verdicts_bundle",
     "main",
     "parse_reconcile_response",
@@ -462,6 +463,10 @@ _RANKED_KEYS = {
     "rationale",
 }
 
+# Keys the parser adds to derived ranked entries for provenance. Not
+# required (older sidecars lack them) but not rejected either.
+_RANKED_OPTIONAL_KEYS = {"source_findings"}
+
 _TENSION_KEYS = {"skill_a", "skill_b", "axis", "resolution"}
 
 _GAP_KEYS = {"rationale", "evidence_source", "evidence_quote_idxs", "why_missed"}
@@ -721,6 +726,7 @@ def _derive_flat_lists_from_graph(
             "severity": severity,
             "source_skills": source_skills,
             "rationale": rationale,
+            "source_findings": [_finding_ref(m) for m in members],
         }
         ranked.append(entry)
 
@@ -741,6 +747,7 @@ def _derive_flat_lists_from_graph(
                 f"(severity {v['source_severity_anchored']}); "
                 f"no cross-skill corroboration surfaced for this defect."
             ),
+            "source_findings": [_finding_ref(v)],
         }
         ranked.append(entry)
 
@@ -782,6 +789,39 @@ def _derive_flat_lists_from_graph(
     ]
 
     return ranked, tensions, gaps
+
+
+def _finding_ref(node: dict[str, Any]) -> dict[str, Any]:
+    """Pointer from a violation node back to the L4 finding it cites."""
+    return {
+        "skill": node["source_skill"],
+        "finding_idx": int(node["source_finding_idx"]),
+    }
+
+
+def evidence_review_ids_for_entry(
+    entry: dict[str, Any],
+    bundle: _ClusterBundle,
+) -> list[str]:
+    """Union (in first-seen order) of the L4 ``evidence_review_ids`` of
+    every finding a ranked entry collapses.
+
+    Returns ``[]`` when the entry carries no ``source_findings`` (sidecars
+    written before this field existed) or when the cited L4 findings
+    themselves carry no review ids.
+    """
+    seen: list[str] = []
+    for ref in entry.get("source_findings", []):
+        verdict = bundle.verdicts_by_skill.get(ref["skill"])
+        if verdict is None:
+            continue
+        idx = ref["finding_idx"]
+        if not 0 <= idx < len(verdict.relevant_heuristics):
+            continue
+        for rid in verdict.relevant_heuristics[idx].evidence_review_ids:
+            if rid not in seen:
+                seen.append(rid)
+    return seen
 
 
 def _auto_repair_ranked(ranked: list[dict[str, Any]]) -> None:
@@ -1166,7 +1206,7 @@ def _validate_ranked(
         raise ReconcileParseError(
             f"ranked_violations[{i}] missing keys: {sorted(missing)}"
         )
-    extra = set(entry.keys()) - _RANKED_KEYS
+    extra = set(entry.keys()) - _RANKED_KEYS - _RANKED_OPTIONAL_KEYS
     if extra:
         raise ReconcileParseError(
             f"ranked_violations[{i}] unexpected keys: {sorted(extra)}"
@@ -1342,6 +1382,7 @@ def _validate_gap_entry(
 def _build_reconciled_verdict(
     payload: dict[str, Any],
     cluster_id: str,
+    bundle: _ClusterBundle | None = None,
 ) -> ReconciledVerdict:
     """Translate the parsed skill payload into the persisted
     :class:`ReconciledVerdict`.
@@ -1351,6 +1392,10 @@ def _build_reconciled_verdict(
     Tensions pass through to :class:`SkillTension` records verbatim.
     The full graph + gaps + payload metadata live in the native
     sidecar, not in the ReconciledVerdict itself.
+
+    ``evidence_review_ids`` on each ranked violation is the union of the
+    review ids carried by the L4 findings it collapses (via the entry's
+    ``source_findings``). Without a ``bundle`` it stays empty.
     """
     ranked: list[HeuristicViolation] = []
     for entry in payload["ranked_violations"]:
@@ -1367,7 +1412,11 @@ def _build_reconciled_verdict(
                 heuristic=entry["heuristic"],
                 violation=entry["violation"],
                 severity=entry["severity"],
-                evidence_review_ids=[],  # inherited from L4 — L5 does not reassign
+                evidence_review_ids=(
+                    evidence_review_ids_for_entry(entry, bundle)
+                    if bundle is not None
+                    else []
+                ),
                 reasoning=" | ".join(reasoning_parts),
             )
         )
@@ -1489,7 +1538,7 @@ async def reconcile_cluster(
             reason=str(e),
         )
 
-    verdict = _build_reconciled_verdict(payload, cluster.cluster_id)
+    verdict = _build_reconciled_verdict(payload, cluster.cluster_id, bundle)
     return ReconcileOutcome(
         cluster_id=cluster.cluster_id,
         verdict=verdict,

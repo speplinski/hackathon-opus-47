@@ -139,6 +139,7 @@ def main() -> int:
             "label": cluster["label"],
             "member_review_ids": cluster["member_review_ids"],
             "representative_quotes": cluster["representative_quotes"],
+            "representative_review_ids": cluster.get("representative_review_ids", []),
             "centroid_vector_ref": cluster.get("centroid_vector_ref"),
             "ui_context": uicx,
             "html": None,

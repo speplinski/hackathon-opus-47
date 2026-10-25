@@ -733,10 +733,11 @@ def _build_heuristic_violations(
     structured copy lives in the native payload sidecar. Same strategy
     the other L4 modules use for their skill-specific metadata.
 
-    ``evidence_review_ids`` is left empty for the same reason as the
-    other L4 modules: quotes lack an explicit back-mapping to review
-    ids, and fuzzy substring matching is fragile. Upstream L3 populates
-    this in a later pass.
+    ``evidence_review_ids`` comes from the finding's
+    ``evidence_quote_idxs`` resolved through
+    :meth:`InsightCluster.evidence_review_ids_for`: L3 records which
+    review each representative quote was taken from. Clusters built
+    before that field existed resolve to ``[]``.
     """
     violations: list[HeuristicViolation] = []
     for finding in payload["findings"]:
@@ -766,7 +767,9 @@ def _build_heuristic_violations(
                 heuristic=finding["heuristic"],
                 violation=finding["violation"],
                 severity=anchored,
-                evidence_review_ids=[],
+                evidence_review_ids=cluster.evidence_review_ids_for(
+                    finding["evidence_quote_idxs"]
+                ),
                 reasoning=reasoning,
             )
         )
