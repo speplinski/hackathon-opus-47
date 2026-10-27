@@ -14,7 +14,7 @@ license = { text = "MIT" }
 # Bumps go through Dependabot (see .github/dependabot.yml).
 dependencies = [
     # Claude
-    "anthropic>=0.40.0,<1.0.0",
+    "anthropic>=0.40.0,<3.0.0",
 
     # Data modelling
     "pydantic>=2.7,<3.0",
