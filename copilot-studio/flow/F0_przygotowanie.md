@@ -4,7 +4,7 @@ Kolejność ma znaczenie: flow odwołuje się do plików, skryptów i promptów 
 
 ## 1. OneDrive
 
-1. Wgraj folder `AuditableDesign/` z paczki (budujesz go skryptem `narzedzia/przygotuj_onedrive.py`) do katalogu głównego swojego OneDrive.
+1. Wgraj folder `OneDrive/AuditableDesign/` z paczki do katalogu głównego swojego OneDrive. Folder buduje skrypt `narzedzia/przygotuj_onedrive.py`.
 2. W `AuditableDesign/` utwórz folder `kernel/`, a w nim w Excelu w przeglądarce pusty skoroszyt `AD_Kernel.xlsx`. Akcja *Run script* wymaga wskazania skoroszytu, nawet jeśli skrypt go nie używa.
 
 Struktura po wgraniu:
