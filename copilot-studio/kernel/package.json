@@ -1,0 +1,10 @@
+{
+  "name": "auditable-design-office-scripts",
+  "private": true,
+  "description": "Deterministic kernel of the Auditable Design pipeline as Office Scripts for Copilot Studio / Power Automate flows",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "bun test tests",
+    "build": "bun build.ts"
+  }
+}
